@@ -1,7 +1,7 @@
 
 #pragma once
 #include "ofMain.h"
-//#include "ofxScrollBox.h"
+#include "ofxScrollBox.h"
 
 #define PRECISION_COL 0
 #define PRECISION_ROW 1
@@ -35,11 +35,26 @@ class ofxKitGrid;
 
 #include "ofxKitEvent.h"
 
+namespace ofxKit {
+    static ofRectangle Shrink(ofRectangle r, float v) {
+            r.x += v;
+            r.y += v;
+            r.width -= v*2;
+            r.height -= v*2;
+            return r;
+    }
+    static ofRectangle Shrink(float x, float y, float w, float h, float v) {
+            ofRectangle r(x + v, y + v, w - (v*2), h - (v*2));
+            return r;
+    }
+}
+
 class ofxKitGrid {
 public:
     
     ofxKitGridStyle style;
     ofRectangle bounds;
+    ofRectangle innerBounds;
     
 #ifdef OFXSCROLLBOX
     
@@ -148,6 +163,7 @@ public:
         }
         
         bounds = r;
+		innerBounds = ofxKit::Shrink(r, 10);
         
 #ifdef OFXSCROLLBOX
         
@@ -199,7 +215,11 @@ public:
         return h;
     }
     
-    
+    void drawWireframes() {
+        for (auto & ch : global) {
+            ofDrawRectangle( ch->bounds );
+        }
+    }
     
     void draw(bool iso = false) {
         
@@ -247,14 +267,12 @@ public:
         
         ofPopMatrix();
         
-#ifdef OFXSCROLLBOX
         if (scroll) scrollBox.draw();
         if (scroll) {
             ofNoFill();
             ofSetColor(255,0,0);
             ofDrawRectangle( scrollBox.inner );
         }
-#endif
         
         int i = 0;
         for (auto & ch : inner) ch->draw(iso);
@@ -264,34 +282,26 @@ public:
     
     void scrolled( ofMouseEventArgs & e ) {
         
-#ifdef OFXSCROLLBOX
         for(auto & ch : global) {
             if (ch->scroll) ch->scrollBox.scrolled(e);
         }
-#endif
     }
     
     void pressed( int x, int y ) {
-#ifdef OFXSCROLLBOX
         for(auto & ch : global) {
             if (ch->scroll) ch->scrollBox.pressed(x,y);
         }
-#endif
         
     }
     void dragged( int x, int y ) {
-#ifdef OFXSCROLLBOX
         for(auto & ch : global) {
             if (ch->scroll) ch->scrollBox.dragged(x,y);
         }
-#endif
     }
     void released( int x, int y ) {
-#ifdef OFXSCROLLBOX
         for(auto & ch : global) {
             if (ch->scroll) ch->scrollBox.released(x,y);
         }
-#endif
     }
     
     
@@ -299,11 +309,12 @@ public:
     vector<int> & position(vector<int> & pos) {
         
         if (parent == this) {
-            ofLogError("Parent is also this");
-            return;
+            ofLogError("position(): Parent is also this");
+            return pos;
         }
         
         if (!parent) {
+			//ofLogError("position(): No Parent");
             return pos;
         }
         int i = getIndex();
@@ -379,13 +390,11 @@ public:
         
         /*-- set scrollbox fixed --*/
         
-#ifdef OFXSCROLLBOX
         
         if (scroll) {
             for (auto & ch : inner) if (!ch->fixed) ch->fixed = true;
         }
         
-#endif
         
         /*-- amend inner --*/
         
@@ -428,7 +437,6 @@ public:
                 
                 /*-- set scroll offset --*/
                 
-#ifdef OFXSCROLLBOX
                 
                 if (scroll) {
                     float s = scrollBox.getScrollOffset();
@@ -439,8 +447,7 @@ public:
                 if (sideOffset != 0) {
                     fx += sideOffset;
                 }
-                
-#endif
+               
                 
                 
                 
@@ -458,7 +465,6 @@ public:
         
         /*-- amend scrollbox --*/
         
-#ifdef OFXSCROLLBOX
         
         if (scroll) {
             float h = 0;
@@ -466,7 +472,6 @@ public:
             scrollBox.inner.height = h;
         }
         
-#endif
     }
     
     

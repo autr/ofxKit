@@ -2,6 +2,10 @@
 
 #include "ofMain.h"
 
+
+#include "ofxKitGrid.h"
+
+
 class ofxKitLogger : public ofBaseLoggerChannel {
 private:
     
@@ -14,16 +18,16 @@ private:
     int max;
     int height;
     bool isnew;
-    ofRectangle bounds;
     string console;
     static ofPtr<ofxKitLogger> logger;
     static ofxKitLogger *logPtr;
+	ofRectangle bounds;
     ofxKitLogger() {
         cw = 8;
         ch = 11;
         console = "";
         word = true;
-        max = 20;
+        max = 240;
         height = 0;
         isnew = false;
     }
@@ -42,8 +46,8 @@ public:
         return logger;
     }
     
-    ofRectangle getBounds() {
-        return bounds;
+    static ofRectangle & getBounds() {
+        return logPtr->bounds;
     }
     
     void log(ofLogLevel level, const string & module, const string & message) {
@@ -67,7 +71,7 @@ public:
         
         int wi = 0;
         
-        for (int i = 0; i < console.size(); i++) {
+		for (int i = 0; i < console.size(); i++) {
             char c = console[i];
             if (c == ' ')  wi = i;
             if ( c == '\n' ) {
@@ -81,7 +85,7 @@ public:
         }
         
         int iadd = 0;
-        for(int i = 0; i < breaks.size(); i++) {
+		for (int i = 0; i < breaks.size(); i++) {
             int index = breaks[i];
             if (!word) console.insert( index  , "\n");
             if (word) console.replace(index, 1, "\n");
@@ -97,8 +101,8 @@ public:
         
         isnew = true;
         
-        consoleLogger.log(level,module, message);
-        fileLogger.log(level,module, message);
+        consoleLogger.log(level, module, message);
+        fileLogger.log(level, module, message);
         
     }
     
@@ -112,8 +116,8 @@ public:
     
     void log(ofLogLevel logLevel, const string & module, const char* format, va_list args) {
         
-        consoleLogger.log(logLevel,module, format, args);
-        fileLogger.log(logLevel,module, format, args);
+        consoleLogger.log(logLevel ,module, format, args);
+        fileLogger.log(logLevel, module, format, args);
     }
     
     void draw(ofRectangle r) {
@@ -122,7 +126,7 @@ public:
     
     void draw(int x, int y, int w, int h) {
         
-        bounds.set(x,y,w, h);
+        bounds = ofxKit::Shrink(x,y,w,h, 10);
         
         if (w <= 0) return;
         
@@ -140,9 +144,9 @@ public:
         }
         
         ofSetColor(255);
-        ofNoFill();
-        fbo.draw(x,y);
-        ofDrawRectangle( x, y, fbo.getWidth(), fbo.getHeight() );
+        ofFill();
+        fbo.draw(bounds.x, bounds.y);
+        //ofDrawRectangle( x, y, fbo.getWidth(), fbo.getHeight() );
     }
     
 };
