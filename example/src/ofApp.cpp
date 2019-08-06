@@ -4,8 +4,8 @@
 void ofApp::setup(){
     ofSetLogLevel(OF_LOG_VERBOSE);
     ofSetFrameRate(30);
-    ofBackground(0, 0, 0, 0);
     ofLog::setAutoSpace(true);
+    ofBackground(20);
     ofEnableAlphaBlending();
     ofSetLoggerChannel(ofxKitLogger::getLogger());
     
