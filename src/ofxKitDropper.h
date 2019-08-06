@@ -1,15 +1,15 @@
 
 #pragma once
 #include "ofMain.h"
-#include "ofxKitGrid.h"
+#include "ofxRect.h"
 
-class ofxKitDropper {
+class Dropper {
 public:
     ofxKitRow * row;
     ofxKitRow * source;
-    ofxKitDropper(ofxKitRow * r) {
+    Dropper(ofxKitRow * r) {
         row = r;
-        source = new ofxKitDropper();
+        source = new Dropper();
     }
     
     

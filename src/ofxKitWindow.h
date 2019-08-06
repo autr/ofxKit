@@ -7,13 +7,13 @@
 #define OFXKIT_WINDOWSTYLE_LINUX 3
 #define OFXKIT_WINDOWSTYLE_PI 4
 
-struct ofxKitWindowSettings {
+struct WindowSettings {
     int titleBarHeight;
     int osStyle;
     float dpi;
     ofColor titleBarColor;
     ofColor backgroundColor;
-    ofxKitWindowSettings() {
+    WindowSettings() {
         titleBarHeight = 28;
 #ifdef TARGET_OSX
         osStyle = OFXKIT_WINDOWSTYLE_MAC;
@@ -30,7 +30,7 @@ struct ofxKitWindowSettings {
     }
 };
 
-class ofxKitWindow {
+class Window {
 public:
     
     ofRectangle titleBar;
@@ -38,12 +38,12 @@ public:
     ofRectangle rightBar;
     ofRectangle windowOrigin;
     ofPoint pressOrigin;
-    ofxKitWindowSettings s;
+    WindowSettings s;
     int w, h;
     bool isMoving, isResizingWidth, isResizingHeight;
     ofFbo actionsFbo;
     
-    ofxKitWindow() {
+    Window() {
         isMoving = false;
         isResizingWidth = false;
         isResizingHeight = false;

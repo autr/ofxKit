@@ -3,6 +3,6 @@
 #include "ofxKitLogger.h"
 
 
-ofPtr<ofxKitLogger> ofxKitLogger::logger;
-ofxKitLogger *ofxKitLogger::logPtr = NULL;
+ofPtr<ofxKit::Logger> ofxKit::Logger::logger;
+ofxKit::Logger *ofxKit::Logger::logPtr = NULL;
 

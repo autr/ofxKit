@@ -70,8 +70,11 @@ common:
 	
 	# when parsing the file system looking for libraries exclude this for all or
 	# a specific platform
-	ADDON_LIBS_EXCLUDE = src/ofxKitCursor.mm
-	ADDON_SOURCES_EXCLUDE = src/ofxKitCursor.mm
+# 	ADDON_LIBS_EXCLUDE = src/Cursor.mm
+	ADDON_LIBS_EXCLUDE += src/Cursor.h
+	ADDON_LIBS_EXCLUDE += src/Cursor.mm
+	ADDON_SOURCES_EXCLUDE += src/Cursor.h
+	ADDON_SOURCES_EXCLUDE += src/Cursor.mm
 	
 	# binary libraries, these will be usually parsed from the file system but some 
 	# libraries need to passed to the linker in a specific order/

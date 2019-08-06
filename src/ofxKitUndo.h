@@ -1,12 +1,12 @@
 #pragma once
 
 #include "ofMain.h"
-#include "ofxKitGrid.h"
-#include "ofxKitEvent.h"
+#include "Rect.h"
+#include "Event.h"
 
-class ofxKitUndo {
+class Undo {
 public:
-    ofxKitGrid * unit;
+    Rect * unit;
     float stamp;
     float tLimit;
     int aLimit;
@@ -16,7 +16,7 @@ public:
     vector<ofJson> store;
     int index;
     
-    ofxKitUndo( ofxKitGrid * u ) {
+    Undo( Rect * u ) {
         unit = u;
         tLimit = 0.2;
         aLimit = 20;
@@ -24,9 +24,9 @@ public:
         active = false;
         restoring = false;
         index = 0;
-        ofAddListener(unit->event, this, &ofxKitUndo::onAction);
+        ofAddListener(unit->event, this, &Undo::onAction);
     }
-    void onAction( ofxKitEvent & e) {
+    void onAction( Event & e) {
         active = true;
         stamp = ofGetElapsedTimef();
         count += 1;

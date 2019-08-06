@@ -1,10 +1,7 @@
 #pragma once
 
 #include "ofMain.h"
-#include "ofxKitWindow.h"
-#include "ofxKitLogger.h"
-#include "ofxKitCursor.h"
-
+#include "ofxKit.h"
 
 class ofApp : public ofBaseApp{
 
@@ -18,15 +15,15 @@ class ofApp : public ofBaseApp{
 		void mouseMoved(int x, int y );
 		void mouseDragged(int x, int y, int button);
 		void mousePressed(int x, int y, int button);
-		void mouseReleased(int x, int y, int button);
+        void mouseReleased(int x, int y, int button);
 		void mouseEntered(int x, int y);
 		void mouseExited(int x, int y);
 		void windowResized(int w, int h);
 		void dragEvent(ofDragInfo dragInfo);
 		void gotMessage(ofMessage msg);
-    
-    
-        ofxKitWindow win;
-//    ofxKitLogger logger;
-    string input;
+		
+        void mouseScrolled( ofMouseEventArgs & e );
+        ofEventListener events;
+//        ofxKit::Scroller scrollBox;
+        vector<string> rows;
 };
