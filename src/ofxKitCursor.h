@@ -20,7 +20,7 @@ public:
     
     void random();
     
-    void draw(float x, float y);
+//    void draw(float x, float y);
     static void set(string s);
     
     virtual ~ofxKitCursor();
