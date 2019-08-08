@@ -148,10 +148,10 @@ namespace ofxKit {
         void setScroll( bool b );
         
         void scrollEvent(string & e);
-        void set(float x, float y, float w, float h, bool a);
-        void set(ofRectangle & r, bool a);
-        void setWidth(float w, bool a);
-        void setHeight(float h, bool a);
+        void set(float x, float y, float w, float h, bool a = true);
+        void set(ofRectangle & r, bool a = true);
+        void setWidth(float w, bool a = true);
+        void setHeight(float h, bool a = true);
         
         Rect * get(vector<int> idx);
         

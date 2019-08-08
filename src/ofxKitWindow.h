@@ -7,6 +7,8 @@
 #define OFXKIT_WINDOWSTYLE_LINUX 3
 #define OFXKIT_WINDOWSTYLE_PI 4
 
+namespace ofxKit {
+
 struct WindowSettings {
     int titleBarHeight;
     int osStyle;
@@ -29,6 +31,7 @@ struct WindowSettings {
         backgroundColor = ofColor(40);
     }
 };
+
 
 class Window {
 public:
@@ -218,3 +221,5 @@ public:
         
     }
 };
+
+}

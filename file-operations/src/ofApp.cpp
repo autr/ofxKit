@@ -20,14 +20,13 @@ void ofApp::draw(){
     r->drawWireframes();
     ofxTxtConf settings;
     txt.draw( ofxTxtConf("hello world", r->conf.inner) );
-//    (*r->texture)->draw(120, 120, 200, 200);
+    (*r->texture)->draw(120, 120, 200, 200);
 }
 
 //--------------------------------------------------------------
 void ofApp::keyPressed(int key){
 
 }
-
 //--------------------------------------------------------------
 void ofApp::keyReleased(int key){
 

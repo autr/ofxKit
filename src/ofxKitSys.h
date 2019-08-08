@@ -129,15 +129,13 @@ namespace ofxKit {
                 return Path("", "", p.bSuccess);
             }
         }
-        static vector<string> list(string path) {
-            
-        }
         
         static vector<string> volumes() {
             vector<string> vols;
+            string str;
 #ifdef TARGET_OSX
             string location = "/Volumes";
-            string str = ofSystem("ls " + location);
+            str = ofSystem("ls " + location);
 #endif
             vols = ofSplitString(str, "\n");
             return vols;
