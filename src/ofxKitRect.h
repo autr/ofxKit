@@ -33,6 +33,12 @@
 
 namespace ofxKit {
     
+//    class Texture {
+//    public:
+//        ofTexture * texture;
+//        float lastUpdated;
+//    }
+    
     struct Error;
     struct Event;
     
@@ -52,9 +58,8 @@ namespace ofxKit {
     };
     
     struct RectConf {
-        
+        string name;
         int type;
-        float mH, mW;
         bool root;
         bool fixed;
         bool ghost;
@@ -63,32 +68,38 @@ namespace ofxKit {
         ofRectangle outer;
         ofRectangle inner;
         ofRectangle minimum;
-        string name;
+        ofVec4f margins;
         RectConf() {
+            name = "";
             type = OFXKIT_COL;
-            mH = 1;
-            mW = 1;
             root = false;
             fixed = false;
             ghost = false;
             root = false;
             scroll = false;
             ratio.set(0,0,1,1);
-            minimum.set(0,0,20,20);
+            minimum.set(0,0,2,2);
+            margins.set(0,0,0,0);
         }
     };
     
+    struct TextureConf {
+        ofTexture ** texture;
+        ofRectangle bounds;
+    };
     
-    static ofRectangle Shrink(ofRectangle r, float v) {
-            r.x += v;
-            r.y += v;
-            r.width -= v*2;
-            r.height -= v*2;
+    
+    static ofRectangle Shrink(ofRectangle r, ofVec4f v) {
+            r.x += v.z;
+            r.y += v.w;
+            r.width -= v.x;
+            r.height -= v.y;
+            r.width -= v.z;
+            r.height -= v.w;
             return r;
     }
-    static ofRectangle Shrink(float x, float y, float w, float h, float v) {
-            ofRectangle r(x + v, y + v, w - (v*2), h - (v*2));
-            return r;
+    static ofRectangle Shrink(ofRectangle r, float x, float y, float w, float h) {
+            return Shrink(r, ofVec4f(x,y,w,h));
     }
 
     class Rect {
@@ -96,20 +107,20 @@ namespace ofxKit {
         
         RectConf conf;
         RectStyle style;
-        ofRectangle inner;
+        ofTexture ** texture;
         
-        int type;
-        float mH, mW;
-        bool fixed;
-        bool ghost;
-        bool scroll;
         bool root;
-        string name;
+        bool scroll;
+        string id;
         
-        float sideOffset;
-        ofVec2f offset; // USE THIS
+        float opacity;
+        ofRectangle offset;
+        ofRectangle transform;
+        ofVec3f origin;
         
-        ofxKit::Scroller scrollBox;
+        void init();
+        
+        ofxKit::Scroller scroller;
         
         vector<int> location;
         Rect * parent;
@@ -123,6 +134,8 @@ namespace ofxKit {
         ofEvent<ofxKit::Event> amended;
         
         
+        void detectOverflow(bool a);
+        
         Rect *& operator[] (size_t i);
         
         Rect();
@@ -135,10 +148,10 @@ namespace ofxKit {
         void setScroll( bool b );
         
         void scrollEvent(string & e);
-        void set(float x, float y, float w, float h);
-        void set(ofRectangle & r);
-        void setWidth(float w);
-        void setHeight(float h);
+        void set(float x, float y, float w, float h, bool a);
+        void set(ofRectangle & r, bool a);
+        void setWidth(float w, bool a);
+        void setHeight(float h, bool a);
         
         Rect * get(vector<int> idx);
         
@@ -148,6 +161,7 @@ namespace ofxKit {
         vector<float> getHeights();
         
         void drawWireframes();
+        void drawScrollers();
         
         void draw(bool iso = false);
         
@@ -157,13 +171,11 @@ namespace ofxKit {
         void dragged( int x, int y );
         void released( int x, int y );
         
-        
-        
         vector<int> & position(vector<int> & pos);
         
         void tag();
         void amend();
-        
+        void update();
         
         int depth(int d = -1);
         
@@ -171,8 +183,6 @@ namespace ofxKit {
         Rect * getRoot();
         
         void remove(vector<Rect *> & v, Rect * c);
-        
-        void load(ofJson & j);
         
         void clear();
         
@@ -184,8 +194,6 @@ namespace ofxKit {
         bool isInvalid( Rect * g );
         
         bool move( Rect * u , int idx = -1);
-        
-        Rect & add(ofJson & j, int idx = -1);
         
         Rect & add(Rect * ch, int idx = -1);
         
@@ -200,7 +208,6 @@ namespace ofxKit {
         int getLastAndInColCount(int i);
         int getLastAndInRowCount(int i);
         
-        ofJson json();
         
         bool inside( Rect * u );
         

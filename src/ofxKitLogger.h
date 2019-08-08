@@ -40,8 +40,6 @@ namespace ofxKit {
                 logPtr = new Logger();
                 logger = ofPtr<Logger>(logPtr);
             }
-            
-            
             return logger;
         }
         
@@ -124,8 +122,6 @@ namespace ofxKit {
         }
         
         void draw(int x, int y, int w, int h) {
-            
-            bounds = ofxKit::Shrink(x,y,w,h, 10);
             
             if (w <= 0) return;
             

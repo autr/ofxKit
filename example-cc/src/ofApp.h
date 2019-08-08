@@ -10,6 +10,8 @@ public:
     void setup();
     void update();
     void draw();
+    
+    void audioOut(ofSoundBuffer &outBuffer);
 
     void keyPressed(int key);
     void keyReleased(int key);
@@ -22,6 +24,10 @@ public:
     void windowResized(int w, int h);
     void dragEvent(ofDragInfo dragInfo);
     void gotMessage(ofMessage msg);
+    
+    std::mutex audioMutex;
+    ofSoundStream soundStream;
+    ofSoundBuffer lastBuffer;
     
     vector<float> sines;
     ofxKit::Rect * layout;

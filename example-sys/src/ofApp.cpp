@@ -9,8 +9,8 @@ void ofApp::setup(){
     
     layout = new ofxKit::Rect(20,20,ofGetWidth() - 40,ofGetHeight()/2);
     
-//    layout->add( OFXKIT_ROW );
-//    layout->add( OFXKIT_ROW );
+    layout->add( OFXKIT_ROW );
+    layout->add( OFXKIT_ROW );
     ofxKit::Rect * r = &layout->add( OFXKIT_ROW );
     r->conf.margins.set(20,20,20,20);
     ofxKit::Rect * thing = &r->add( OFXKIT_COL );
@@ -27,6 +27,7 @@ void ofApp::setup(){
     ofxKit::Sys::volumes();
     ofxKit::DiskSpace dev("/Volumes/Macintosh HD/");
     ofLog() << "Disk A" << dev.capacity->human;
+    ofxKit::Directory("~/Downloads");
     
 }
 

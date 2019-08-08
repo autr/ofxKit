@@ -2,7 +2,7 @@
 
 #include "ofMain.h"
 #include "ofxKit.h"
-#include "ofxGui.h"
+#include "ofxTxt.h"
 
 class ofApp : public ofBaseApp{
 
@@ -22,16 +22,8 @@ public:
     void windowResized(int w, int h);
     void dragEvent(ofDragInfo dragInfo);
     void gotMessage(ofMessage msg);
-    
-    vector<float> sines;
-    ofxKit::Rect * layout;
-    ofParameter<float> volume;
-    ofParameter<float> minSpeed;
-    ofParameter<float> maxSpeed;
-    ofParameter<float> minSize;
-    ofParameter<float> maxSize;
-    ofxPanel gui;
-    int currSample;
 
+    ofxTxt txt;
+    ofxKit::Rect * r;
 		
 };

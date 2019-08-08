@@ -1,5 +1,6 @@
 #include "ofxKitRect.h"
 #include "ofxKitTypes.h"
+#include "ofxKitInteract.h"
 
 namespace ofxKit {
     
@@ -12,7 +13,7 @@ namespace ofxKit {
         /*-- root --*/
         
         ofLogNotice("ofxKit::Rect") << "setting root";
-        Rect(OFXKIT_COL); // reset child
+        init();
         root = true;
         global.push_back(this);
     };
@@ -21,43 +22,44 @@ namespace ofxKit {
         /*-- root --*/
         
         ofLogNotice("ofxKit::Rect") << "setting root" << x << y << w << h;
-        Rect(OFXKIT_COL); // reset child
+        init();
         root = true;
         global.push_back(this);
-        set(x,y,w,h);
-        amend();
+        set(x,y,w,h,true);
         
     };
     Rect::Rect(int t) {
         
         /*-- child --*/
         
-        type = t;
-        conf.ratio.height = 1;
-        conf.ratio.width = 1;
-        fixed = false;
-        ghost = false;
-        root = false;
-        scroll = false;
-        sideOffset = 0;
-        parent = nullptr;
-        ofAddListener(scrollBox.event , this, &Rect::scrollEvent);
+        conf.type = t;
+        init();
     };
     
+    void Rect::init() {
+        
+        scroller.init(this);
+        parent = nullptr;
+        offset.set(0,0,0,0);
+        origin.set(0.5,0.5);
+        transform.set(0,0,1,1);
+        ofAddListener(scroller.event , this, &Rect::scrollEvent);
+    }
+    
     int Rect::getScrollingGrids( vector<Rect *> & list ) {
-        if (scroll) list.push_back(this);
+        if (conf.scroll) list.push_back(this);
         for (auto & ch : childr ) ch->getScrollingGrids( list );
         return list.size();
     }
     
     void Rect::setFixed( bool b ) {
-        fixed = b;
+        conf.fixed = b;
         ( !root ) ? parent->amend() : amend();
         ofxKit::Event e("setfixed", this);
         ofNotifyEvent(getRoot()->event, e);
     }
     void Rect::setScroll( bool b ) {
-        scroll = b;
+        conf.scroll = b;
         ( !root ) ? parent->amend() : amend();
         ofxKit::Event e("setscroll", this);
         ofNotifyEvent(getRoot()->event, e);
@@ -66,31 +68,47 @@ namespace ofxKit {
     void Rect::scrollEvent(string & e) {
         if (e == "scrolled") amend();
     }
-    void Rect::set(float x, float y, float w, float h) {
+    void Rect::set(float x, float y, float w, float h, bool a) {
         ofRectangle r(x, y, w, h);
-        set(r);
+        set(r, a);
     }
-    void Rect::set(ofRectangle & r) {
+    
+    void Rect::detectOverflow(bool a) {
+        
+        
+        ofRectangle parent_(conf.inner);
+        for ( auto & ch : childr) {
+            
+            ofRectangle outer_(ch->conf.outer);
+            bool overW = outer_.getRight() > parent_.getRight();
+            bool overH = outer_.getBottom() > parent_.getBottom();
+            
+            if (overW) conf.inner.width =  outer_.getRight() - parent_.getX() ;
+            if (overH) conf.inner.height =  outer_.getBottom() - parent_.getY() ;
+            if (overW||overH) {
+                scroll = true;
+            }
+        }
+        
+//        if (a) amend();
+    }
+    void Rect::set(ofRectangle & r, bool a) {
         
         if (r.width < conf.minimum.width) r.width = conf.minimum.width;
         if (r.height < conf.minimum.height) r.height = conf.minimum.height;
         
         conf.outer = r;
-        conf.inner = ofxKit::Shrink(conf.outer, 10);
         
-        if (scrollBox.scrollY == 999999) scrollBox.scrollY = conf.outer.y;
+        conf.inner = ofxKit::Shrink(conf.outer, conf.margins);
         
-        scrollBox.outer = conf.outer;
-        scrollBox.inner = conf.outer;
-        scrollBox.inner.y = scrollBox.scrollY;
-        
+        if (!root) parent->detectOverflow(parent);
         
     }
-    void Rect::setWidth(float w) {
-        set(conf.outer.x, conf.outer.y, w, conf.outer.height);
+    void Rect::setWidth(float w, bool a) {
+        set(conf.outer.x, conf.outer.y, w, conf.outer.height, a);
     }
-    void Rect::setHeight(float h) {
-        set(conf.outer.x, conf.outer.y, conf.outer.width, h);
+    void Rect::setHeight(float h, bool a) {
+        set(conf.outer.x, conf.outer.y, conf.outer.width, h, a);
     }
     
     Rect * Rect::get(vector<int> idx) {
@@ -111,7 +129,7 @@ namespace ofxKit {
         if ( root ) return w;
         for (int i = 0; i < parent->childr.size(); i++) {
             Rect * ch = parent->childr[i];
-            if (!ch->ghost) w.push_back(ch->conf.ratio.width);
+            if (!ch->conf.ghost) w.push_back(ch->conf.ratio.width);
         }
         return w;
     }
@@ -120,16 +138,30 @@ namespace ofxKit {
         if ( root ) return h;
         for (int i = 0; i < parent->childr.size(); i++) {
             Rect * ch = parent->childr[i];
-            if (!ch->ghost) h.push_back(ch->conf.ratio.height);
+            if (!ch->conf.ghost) h.push_back(ch->conf.ratio.height);
         }
         return h;
     }
     
     void Rect::drawWireframes() {
+        
+        ofPushMatrix();
+        float x = ofMap( origin.x, 0, 1, conf.outer.x, conf.outer.getRight());
+        float y = ofMap( origin.y, 0, 1, conf.outer.y, conf.outer.getBottom());
+        ofTranslate( x,y);
+        ofScale( transform.width, transform.height, 1 );
+        ofTranslate( -x , -y);
+        
         for (auto & ch : global) {
             ofNoFill();
             ofDrawRectangle( ch->conf.outer );
+            ofDrawRectangle( ch->conf.inner );
+            if (ch->conf.type == OFXKIT_OBJ) {
+                ofDrawLine( ch->conf.inner.getTopLeft(), ch->conf.inner.getBottomRight() );
+                ofDrawLine( ch->conf.inner.getTopRight(), ch->conf.inner.getBottomLeft() );
+            }
         }
+        ofPopMatrix();
     }
     
     void Rect::draw(bool iso ) {
@@ -156,7 +188,7 @@ namespace ofxKit {
         s += ofToString(conf.outer.height) + " ";
         
         
-        if (type == OFXKIT_OBJ) {
+        if (conf.type == OFXKIT_OBJ) {
             ofDrawLine( conf.outer.getTopLeft(), conf.outer.getBottomRight() );
             ofDrawLine( conf.outer.getTopRight(), conf.outer.getBottomLeft() );
         }
@@ -178,12 +210,7 @@ namespace ofxKit {
         
         ofPopMatrix();
         
-        if (scroll) scrollBox.draw();
-        if (scroll) {
-            ofNoFill();
-            ofSetColor(255,0,0);
-            ofDrawRectangle( scrollBox.inner );
-        }
+        if (conf.scroll) scroller.draw();
         
         int i = 0;
         for (auto & ch : childr) ch->draw(iso);
@@ -192,27 +219,15 @@ namespace ofxKit {
     }
     
     void Rect::scrolled( ofMouseEventArgs & e ) {
-        
-        for(auto & ch : global) {
-            if (ch->scroll) ch->scrollBox.scrolled(e);
-        }
+        if (scroll) scroller.scrolled(e);
     }
     
     void Rect::pressed( int x, int y ) {
-        for(auto & ch : global) {
-            if (ch->scroll) ch->scrollBox.pressed(x,y);
-        }
         
     }
     void Rect::dragged( int x, int y ) {
-        for(auto & ch : global) {
-            if (ch->scroll) ch->scrollBox.dragged(x,y);
-        }
     }
     void Rect::released( int x, int y ) {
-        for(auto & ch : global) {
-            if (ch->scroll) ch->scrollBox.released(x,y);
-        }
     }
     
     
@@ -243,32 +258,33 @@ namespace ofxKit {
         for (auto & i : location) {
             ss += ">"+ofToString(i + 1);
         }
-        name = ss;
+        id = ss;
     }
     
     void Rect::amend() {
         
         
-        if (!ghost) tag();
+        if (!conf.ghost) tag();
         
         Event e("amended", this);
         ofNotifyEvent(getRoot()->event, e);
         
         /*-- iterate width, height and position into pixels --*/
 
-        ofRectangle parent_( conf.outer );
+        ofRectangle wrap_( conf.inner );
+        ofRectangle inner_( conf.inner );
         ofRectangle ratio_;
         
-        bool isCol = (type == OFXKIT_COL || type == OFXKIT_OBJ);
-        bool isRow = (type == OFXKIT_ROW);
-        bool isScroll = (scroll);
+        bool isCol = (conf.type == OFXKIT_COL || conf.type == OFXKIT_OBJ);
+        bool isRow = (conf.type == OFXKIT_ROW);
+        bool isScroll = (conf.scroll);
         
         /*-- get totals --*/
         
         for (auto & c : childr) {
             
-            bool isFixed = c->fixed;
-            bool isGhost = c->ghost;
+            bool isFixed = c->conf.fixed;
+            bool isGhost = c->conf.ghost;
             
             /*-- get total without fixed widths and heights --*/
             
@@ -277,12 +293,12 @@ namespace ofxKit {
                 if (isCol && isFixed) {
                     
                     ratio_.width += c->conf.ratio.width;
-                    parent_.height -= c->conf.outer.height;
+                    wrap_.height -= inner_.height;
                     
                 } else if (isRow && isFixed) {
                     
                     ratio_.height += c->conf.ratio.height;
-                    parent_.width -= c->conf.outer.width;
+                    wrap_.width -= inner_.width;
                 } else {
                     
                     ratio_.width += c->conf.ratio.width;
@@ -292,14 +308,8 @@ namespace ofxKit {
         }
         
         
-        /*-- set scrollbox fixed --*/
         
-        
-        if (scroll) for (auto & ch : childr) if (!ch->fixed) ch->fixed = true;
-        
-        
-        
-        ofRectangle move_( parent_ );
+        ofRectangle move_( wrap_ );
         
         /*-- amend childr --*/
         
@@ -307,16 +317,16 @@ namespace ofxKit {
             
             c->tag();
             
-            bool isFixed = (c->fixed);
-            bool isGhost = c->ghost;
+            bool isFixed = (c->conf.fixed);
+            bool isGhost = c->conf.ghost;
             
             if (!isGhost) {
                 
-                float ww = ( parent_.width / ratio_.width ) * c->conf.ratio.width;
-                float hh = ( parent_.height / ratio_.height ) * c->conf.ratio.height;
+                float ww = ( wrap_.width / ratio_.width ) * c->conf.ratio.width;
+                float hh = ( wrap_.height / ratio_.height ) * c->conf.ratio.height;
                 
                 ofRectangle outer_( c->conf.outer );
-                ofRectangle iter_( parent_ );
+                ofRectangle iter_( wrap_ );
                 
                 if (isCol) {
                     iter_.y = move_.y;
@@ -333,23 +343,12 @@ namespace ofxKit {
                     iter_.width = outer_.width;
                 }
                 
-                /*-- set scroll offset --*/
-                
-                
-                if (scroll) {
-                    float s = scrollBox.getScrollOffset();
-                    iter_.y -= s;
-                    
-                }
-                
-                if (sideOffset != 0) {
-                    iter_.x += sideOffset;
-                }
                 
                 
                 /*-- set outer --*/
                 
-                c->set(iter_);
+                c->set(iter_, false);
+                
                 
                 move_.x += c->conf.outer.width;
                 move_.y += c->conf.outer.height;
@@ -358,14 +357,6 @@ namespace ofxKit {
             }
         }
         
-        /*-- amend scrollbox --*/
-        
-        
-        if (scroll) {
-            float h = 0;
-            for (auto & ch : childr) h += ch->conf.outer.height;
-            scrollBox.inner.height = h;
-        }
         
     }
     
@@ -393,29 +384,6 @@ namespace ofxKit {
         if (idx != v.end()) v.erase(idx);
     }
     
-    void Rect::load(ofJson & j) {
-        
-        
-        clear();
-        
-        
-        if (this == getRoot()) {
-            
-            float x = j["x"].get<float>();
-            float y = j["y"].get<float>();
-            float w = j["width"].get<float>();
-            float h = j["height"].get<float>();
-            set( x, y, w, h );
-            
-        }
-        
-        for (int i = 0; i < j["childr"].size(); i++) {
-            add( j["childr"][i], i);
-        }
-        Event e("loaded", this);
-        ofNotifyEvent(getRoot()->event, e);
-        
-    }
     
     void Rect::clear() {
         
@@ -482,29 +450,20 @@ namespace ofxKit {
         ofLogVerbose("[Rect]") << "Moving to  : " << getLocationString();
         
         if (u->parent) remove( u->parent->childr, u ); // remove from old parent
-        u->ghost = false;
+        u->conf.ghost = false;
         add( u, idx ); // add here
         return true;
     }
     
-    Rect & Rect::add(ofJson & j, int idx) {
+    void Rect::update() {
         
-        Rect * ch = new Rect( j["type"].get<int>() );
-        //        ch->conf.ratio.height = j["height"].get<float>(); // default multiH
-        //        ch->conf.ratio.width = j["width"].get<float>(); // default multiWidth
-        //
-        //    //        if (!j["fX"].is_null()) ch->fX = j["fX"].get<float>();
-        //    //        if (!j["fY"].is_null()) ch->fY = j["fY"].get<float>();
-        //    //        if (!j["fW"].is_null()) ch->fW = j["fW"].get<float>();
-        //    //        if (!j["fH"].is_null()) ch->fH = j["fH"].get<float>();
-        //
-        //        ch->type = j["type"].get<int>();
-        //        ch->parent = nullptr;
-        //        add(ch, idx);
-        //
-        //        for (int i = 0; i < j["childr"].size(); i++) ch->add( j["childr"][i], i);
+        if (scroll) scroller.update();
+        for (auto & ch : childr) ch->update();
+    }
+    void Rect::drawScrollers() {
         
-        return * ch;
+        if (scroll) scroller.draw();
+        for (auto & ch : childr) ch->drawScrollers();
     }
     
     /*-- Main Add Func --*/
@@ -512,8 +471,8 @@ namespace ofxKit {
     Rect & Rect::add(Rect * ch, int idx) {
         
         
-        Rect * root = getRoot();
-        remove(root->global, ch);
+        Rect * r = getRoot();
+        remove(r->global, ch);
         
         ch->parent = this;
         /*-- Insert new rect --*/
@@ -525,12 +484,13 @@ namespace ofxKit {
         
         /*--- Generate position ---*/
         
-        root->global.push_back(ch);
+        ofxKit::Interact::get()->add(ch);
+        r->global.push_back(ch);
         amend();
         
-        ofLogNotice("ofxKit::Rect") << "adding child @ position:" << idx << "size:" << ch->conf.outer;
+//        ofLogNotice("ofxKit::Rect") << "adding child @ position:" << idx << "size:" << ch->conf.outer;
         Event e("added", ch);
-        ofNotifyEvent(root->event, e);
+        ofNotifyEvent(r->event, e);
         
         /*-- Return vector --*/
         
@@ -546,13 +506,6 @@ namespace ofxKit {
         
         return * ch;
     }
-    
-    
-    
-    
-    
-    
-    
     
     
     string Rect::getLocationString(string l) {
@@ -581,7 +534,7 @@ namespace ofxKit {
         if ( root ) return i;
         
         bool isFirst = (getIndex() == 0);
-        bool isInCol = (parent->type == OFXKIT_COL);
+        bool isInCol = (parent->conf.type == OFXKIT_COL);
         
         if (isFirst && isInCol && parent->parent) i += 1;
         return parent->getFirstAndInColCount(i);
@@ -590,7 +543,7 @@ namespace ofxKit {
         if ( root ) return i;
         
         bool isLast = (getIndex() == parent->childr.size() - 1);
-        bool isInCol = (parent->type == OFXKIT_COL);
+        bool isInCol = (parent->conf.type == OFXKIT_COL);
         
         if (isLast && isInCol && parent->parent) i += 1;
         return parent->getLastAndInColCount(i);
@@ -599,33 +552,12 @@ namespace ofxKit {
         if ( root ) return i;
         
         bool isLast = (getIndex() == parent->childr.size() - 1);
-        bool isInRow = (parent->type == OFXKIT_ROW);
+        bool isInRow = (parent->conf.type == OFXKIT_ROW);
         
         if (isLast && isInRow) i += 1;
         return parent->getLastAndInRowCount(i);
     }
     
-    ofJson Rect::json() {
-        
-        ofJson j;
-        
-        if ( root ) {
-            j["fX"] = conf.outer.x;
-            j["fY"] = conf.outer.y;
-            j["fW"] = conf.outer.width;
-            j["fH"] = conf.outer.height;
-        } else {
-            j["type"] = type;
-            j["width"] = conf.ratio.width;
-            j["height"] = conf.ratio.height;
-        }
-        
-        for (int i = 0; i < childr.size(); i++) {
-            j["childr"][i] = childr[i]->json();
-        }
-        
-        return j;
-    }
     
     bool Rect::inside( Rect * u ) {
         if ( u == this ) return true;

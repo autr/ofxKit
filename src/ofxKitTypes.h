@@ -54,8 +54,8 @@ namespace ofxKit {
             
             if (u->parent) {
                 isLast = (u->getIndex() == u->parent->childr.size() - 1);
-                isInCol = (u->parent->type == OFXKIT_COL);
-                isInRow = (u->parent->type == OFXKIT_ROW);
+                isInCol = (u->parent->conf.type == OFXKIT_COL);
+                isInRow = (u->parent->conf.type == OFXKIT_ROW);
             }
             noInner = (u->childr.size() <= 1);
             
