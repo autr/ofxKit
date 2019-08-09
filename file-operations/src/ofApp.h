@@ -1,8 +1,10 @@
 #pragma once
 
+#define OFXKIT
 #include "ofMain.h"
 #include "ofxKit.h"
 #include "ofxTxt.h"
+#include "ofxKitSync.h"
 
 class ofApp : public ofBaseApp{
 
@@ -25,5 +27,7 @@ public:
 
     ofxTxt txt;
     ofxKit::Rect * r;
+    ofxKit::Rect * txtRect;
+    ofEventListener txtListener;
 		
 };

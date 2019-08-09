@@ -98,6 +98,7 @@ namespace ofxKit {
     }
     
     void Scroller::update() {
+        if (rect == nullptr) return;
         if (rect->conf.inner.height < rect->conf.outer.height) return;
         
         float t = ofGetElapsedTimef();
@@ -247,7 +248,7 @@ namespace ofxKit {
             bool isMoreThan = scrollY - outerY > 0;
             
             float length = ( t - timestamp ) * s.elasticSpeed;
-            if (length > 2) length = 1;
+            if (length > 0.6) length = 0.6;
             float distance = d * s.elasticDistance;
             
             if (isLess && isLessThan && isStateful) {

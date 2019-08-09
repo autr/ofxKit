@@ -4,47 +4,106 @@
 
 namespace ofxKit {
     
-    Rect *& Rect::operator[](size_t i) {
-        return childr[i];
+    Rect::Rect(int type, bool root_) {
+        init();
+        conf.type = type;;
+        root = root_;
+        set( conf.outer );
+        scroller.init(this);
+        if (root) global.push_back(this);
     }
-    
-    Rect::Rect() {
+    Rect::Rect( RectConf conf_, bool root_ ) {
         
         /*-- root --*/
         
-        ofLogNotice("ofxKit::Rect") << "setting root";
         init();
-        root = true;
-        global.push_back(this);
-    };
-    Rect::Rect(float x, float y, float w, float h) {
-        
-        /*-- root --*/
-        
-        ofLogNotice("ofxKit::Rect") << "setting root" << x << y << w << h;
-        init();
-        root = true;
-        global.push_back(this);
-        set(x,y,w,h,true);
-        
-    };
-    Rect::Rect(int t) {
-        
-        /*-- child --*/
-        
-        conf.type = t;
-        init();
+        conf = conf_;
+        root = root_;
+        set( conf.outer );
+        scroller.init(this);
+        if (root) global.push_back(this);
+//        ofLogNotice("ofxKit") << "creating rect" << conf_.type << conf.type;
     };
     
     void Rect::init() {
         
         scroller.init(this);
         parent = nullptr;
-        offset.set(0,0,0,0);
+        offset.set(0,0);
         origin.set(0.5,0.5);
         transform.set(0,0,1,1);
         ofAddListener(scroller.event , this, &Rect::scrollEvent);
     }
+    
+    
+    Rect & Rect::add( RectConf conf_, int idx) {
+        
+        Rect * ch = new Rect(conf_);
+        ch->root = false;
+        amendPtrs(ch, idx);
+        amend();
+//        ofLogNotice("ofxKit") << "adding rect" << conf_.type;
+        return * ch;
+        
+    }
+    
+    Rect & Rect::add( int t, int idx) {
+        
+        Rect * ch = new Rect( t );
+        ch->root = false;
+        ch->conf.type = t;
+//        ofLogNotice("ofxKit") << "adding rect" << t << ch->conf.type;
+        amendPtrs(ch, idx);
+        amend();
+        return * ch;
+        
+    }
+    
+    
+    
+    bool Rect::move( Rect * u , int idx) {
+        
+        if ( isInvalid(u) ) return false;
+        
+        ofLogVerbose("[Rect]") << "Moving from: " << u->getLocationString();
+        ofLogVerbose("[Rect]") << "Moving to  : " << getLocationString();
+        
+        if (u->parent) remove( u->parent->childr, u ); // remove from old parent
+        u->conf.ghost = false;
+//        amendPtrs( u, idx ); // add here
+        return true;
+    }
+    
+    void Rect::amendPtrs( Rect * ch, int idx) {
+        
+        Rect * r = getRoot();
+        remove(r->global, ch);
+        
+        ch->parent = this;
+        /*-- Insert new rect --*/
+        
+        if (idx > childr.size() || idx < 0) idx = childr.size(); // safe IDX
+        
+        int d = 0;
+        childr.insert(childr.begin() + idx, ch); // insert @ IDX
+        
+        /*--- Generate position ---*/
+        
+        ofxKit::Interact::get()->add(ch);
+        r->global.push_back(ch);
+        amend();
+        
+        //        ofLogNotice("ofxKit::Rect") << "adding child @ position:" << idx << "size:" << ch->conf.outer;
+        Event e("added", ch);
+        ofLogNotice("ofxKit") << "added" << r->id << ch->conf.type << ch->id << r->global.size() << r->global.back()->conf.type;
+        ofNotifyEvent(r->event, e);
+        
+        /*-- Return vector --*/
+        
+//        return ch;
+    }
+    
+    
     
     int Rect::getScrollingGrids( vector<Rect *> & list ) {
         if (conf.scroll) list.push_back(this);
@@ -68,31 +127,33 @@ namespace ofxKit {
     void Rect::scrollEvent(string & e) {
         if (e == "scrolled") amend();
     }
-    void Rect::set(float x, float y, float w, float h, bool a) {
-        ofRectangle r(x, y, w, h);
-        set(r, a);
-    }
     
-    void Rect::detectOverflow(bool a) {
+    void Rect::detectOverflow() {
         
         
-        ofRectangle parent_(conf.inner);
+        ofRectangle inner_(conf.inner);
         for ( auto & ch : childr) {
             
-            ofRectangle outer_(ch->conf.outer);
-            bool overW = outer_.getRight() > parent_.getRight();
-            bool overH = outer_.getBottom() > parent_.getBottom();
+            ofRectangle child_(ch->conf.outer);
+            bool overW = child_.getRight() > inner_.getRight();
+            bool overH = child_.getBottom() > inner_.getBottom();
             
-            if (overW) conf.inner.width =  outer_.getRight() - parent_.getX() ;
-            if (overH) conf.inner.height =  outer_.getBottom() - parent_.getY() ;
+            if (overW) conf.inner.width =  child_.getRight() - inner_.getX() ;
+            if (overH) conf.inner.height =  child_.getBottom() - inner_.getY() ;
             if (overW||overH) {
+                ofLog() << "detected overflow" << id << conf.inner.height;
                 scroll = true;
             }
         }
         
-//        if (a) amend();
     }
-    void Rect::set(ofRectangle & r, bool a) {
+    
+    
+    void Rect::set(float x, float y, float w, float h, bool reload) {
+        ofRectangle r(x, y, w, h);
+        set(r, reload);
+    }
+    void Rect::set(ofRectangle & r, bool reload) {
         
         if (r.width < conf.minimum.width) r.width = conf.minimum.width;
         if (r.height < conf.minimum.height) r.height = conf.minimum.height;
@@ -100,15 +161,16 @@ namespace ofxKit {
         conf.outer = r;
         
         conf.inner = ofxKit::Shrink(conf.outer, conf.margins);
-        
-        if (!root) parent->detectOverflow(parent);
+    
+        if (!root) detectOverflow();
+        if (reload) amend();
         
     }
-    void Rect::setWidth(float w, bool a) {
-        set(conf.outer.x, conf.outer.y, w, conf.outer.height, a);
+    void Rect::setWidth(float w, bool reload) {
+        set(conf.outer.x, conf.outer.y, w, conf.outer.height, reload);
     }
-    void Rect::setHeight(float h, bool a) {
-        set(conf.outer.x, conf.outer.y, conf.outer.width, h, a);
+    void Rect::setHeight(float h, bool reload) {
+        set(conf.outer.x, conf.outer.y, conf.outer.width, h, reload);
     }
     
     Rect * Rect::get(vector<int> idx) {
@@ -151,20 +213,27 @@ namespace ofxKit {
         ofTranslate( x,y);
         ofScale( transform.width, transform.height, 1 );
         ofTranslate( -x , -y);
+        ofVec2f o;
+        getOffsetXY(o);
+        ofTranslate(o.x, o.y);
         
+        int i = 0;
         for (auto & ch : global) {
             ofNoFill();
+//            ofLog() << ch->conf.type << ch->id << i;
+//            ofLog() << ch->id << ch->conf.inner.x << ch->conf.inner.y;
             ofDrawRectangle( ch->conf.outer );
             ofDrawRectangle( ch->conf.inner );
             if (ch->conf.type == OFXKIT_OBJ) {
                 ofDrawLine( ch->conf.inner.getTopLeft(), ch->conf.inner.getBottomRight() );
                 ofDrawLine( ch->conf.inner.getTopRight(), ch->conf.inner.getBottomLeft() );
             }
+            i += 1;
         }
         ofPopMatrix();
     }
     
-    void Rect::draw(bool iso ) {
+    void Rect::draw( ) {
         
         
         ofColor c = style.defaultColor;
@@ -174,9 +243,9 @@ namespace ofxKit {
         ofSetLineWidth(2);
         
         ofPushMatrix();
-        if (iso) {
-            ofTranslate(0,0,depth() * 80);
-        }
+//        if (iso) {
+//            ofTranslate(0,0,depth() * 80);
+//        }
         
         
         ofRectangle r = conf.outer;
@@ -196,13 +265,13 @@ namespace ofxKit {
         ofSetColor(255);
         if (childr.size() > 0) ofDrawBitmapString( ofToString( childr.size() ) , conf.outer.getCenter() );
         
-        if (parent && iso) {
-            ofSetColor(255,255,255,100);
-            ofVec3f p = parent->conf.outer.getCenter();
-            ofVec3f c = conf.outer.getCenter();
-            p.z -= 80;
-            ofDrawLine(c, p);
-        }
+//        if (parent && iso) {
+//            ofSetColor(255,255,255,100);
+//            ofVec3f p = parent->conf.outer.getCenter();
+//            ofVec3f c = conf.outer.getCenter();
+//            p.z -= 80;
+//            ofDrawLine(c, p);
+//        }
         
         
         ofFill();
@@ -213,13 +282,61 @@ namespace ofxKit {
         if (conf.scroll) scroller.draw();
         
         int i = 0;
-        for (auto & ch : childr) ch->draw(iso);
-        for (auto & ch : ghosts) ch->draw(iso);
+        for (auto & ch : childr) ch->draw();
+        for (auto & ch : ghosts) ch->draw();
         
     }
     
+    void Rect::drawIsomorphic() {
+        
+    }
+    ofVec2f & Rect::getOffsetXY( ofVec2f & o ) {
+        
+        o.x += offset.x;
+        o.y += offset.y;
+        if (root) return o;
+        return parent->getOffsetXY(o);
+    }
+    void Rect::drawTextures() {
+        
+        if (texture.active) {
+//                ofLog() << "texture" << id;
+            ofRectangle r(0,0,texture.ptr->getWidth(), texture.ptr->getHeight());
+            bool isWider =  r.width > (int)conf.outer.width;
+            bool isTaller = r.height > (int)conf.outer.height;
+            if (isWider || isTaller) {
+//                r = Shrink( r , conf.margins );
+                if (isWider) setWidth((int)r.width);
+                if (isTaller) setHeight((int)r.height);
+                parent->amend();
+            }
+            ofRectangle parent_outer_(parent->conf.outer);
+            ofRectangle draw_(  parent_outer_ );
+            ofRectangle crop_(  parent_outer_.x - conf.inner.x, parent_outer_.y - conf.inner.y, parent_outer_.width, parent_outer_.height );
+//            draw_.x =
+            texture.ptr->drawSubsection(draw_, crop_);
+        }
+        
+//        if (texture != nullptr) {
+//            try {
+//                if ((*texture) != nullptr) {
+//                    try {
+//
+//                    } catch (const std::exception& e) {
+//                        ofLogError("ofxKit") << "invalid texture";
+//                    }
+//                }
+//            } catch (const std::exception& e) {
+//                ofLogError("ofxKit") << "invalid texture";
+//            }
+//        }
+        for (auto & c : childr) c->drawTextures();
+    }
+    
     void Rect::scrolled( ofMouseEventArgs & e ) {
-        if (scroll) scroller.scrolled(e);
+        if (scroll) {
+            scroller.scrolled(e);
+        }
     }
     
     void Rect::pressed( int x, int y ) {
@@ -270,7 +387,7 @@ namespace ofxKit {
         ofNotifyEvent(getRoot()->event, e);
         
         /*-- iterate width, height and position into pixels --*/
-
+        
         ofRectangle wrap_( conf.inner );
         ofRectangle inner_( conf.inner );
         ofRectangle ratio_;
@@ -353,6 +470,8 @@ namespace ofxKit {
                 move_.x += c->conf.outer.width;
                 move_.y += c->conf.outer.height;
                 
+                
+                
                 c->amend();
             }
         }
@@ -368,9 +487,6 @@ namespace ofxKit {
         return location.size();//parent->depth(d);
     }
     
-    bool Rect::hasError() {
-        return errors.size() > 0;
-    }
     
     Rect * Rect::getRoot() {
         if ( root ) {
@@ -442,19 +558,6 @@ namespace ofxKit {
         return invalid;
     }
     
-    bool Rect::move( Rect * u , int idx) {
-        
-        if ( isInvalid(u) ) return false;
-        
-        ofLogVerbose("[Rect]") << "Moving from: " << u->getLocationString();
-        ofLogVerbose("[Rect]") << "Moving to  : " << getLocationString();
-        
-        if (u->parent) remove( u->parent->childr, u ); // remove from old parent
-        u->conf.ghost = false;
-        add( u, idx ); // add here
-        return true;
-    }
-    
     void Rect::update() {
         
         if (scroll) scroller.update();
@@ -466,46 +569,6 @@ namespace ofxKit {
         for (auto & ch : childr) ch->drawScrollers();
     }
     
-    /*-- Main Add Func --*/
-    
-    Rect & Rect::add(Rect * ch, int idx) {
-        
-        
-        Rect * r = getRoot();
-        remove(r->global, ch);
-        
-        ch->parent = this;
-        /*-- Insert new rect --*/
-        
-        if (idx > childr.size() || idx < 0) idx = childr.size(); // safe IDX
-        
-        int d = 0;
-        childr.insert(childr.begin() + idx, ch); // insert @ IDX
-        
-        /*--- Generate position ---*/
-        
-        ofxKit::Interact::get()->add(ch);
-        r->global.push_back(ch);
-        amend();
-        
-//        ofLogNotice("ofxKit::Rect") << "adding child @ position:" << idx << "size:" << ch->conf.outer;
-        Event e("added", ch);
-        ofNotifyEvent(r->event, e);
-        
-        /*-- Return vector --*/
-        
-        return * ch;
-    }
-    
-    /*-- Abstract Add Func --*/
-    
-    Rect & Rect::add(int t, int idx) {
-        
-        Rect * ch = new Rect(t);
-        add(ch, idx);
-        
-        return * ch;
-    }
     
     
     string Rect::getLocationString(string l) {

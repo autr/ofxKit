@@ -18,9 +18,9 @@ namespace ofxKit {
         int height;
         bool isnew;
         string console;
+        ofRectangle bounds;
         static ofPtr<Logger> logger;
         static Logger *logPtr;
-        ofRectangle bounds;
         Logger() {
             cw = 8;
             ch = 11;
