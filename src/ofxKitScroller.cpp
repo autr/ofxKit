@@ -111,7 +111,7 @@ namespace ofxKit {
         if (scrollState == SCROLL_CHECK) {
             if (t - timestamp > 0.1) {
                 scrollState = SCROLL_PASSED;
-                ofLogVerbose("[Scroller]") << "Native timeout PASSED";
+//                ofLogVerbose("[Scroller]") << "Native timeout PASSED";
             }
         }
         
@@ -130,7 +130,7 @@ namespace ofxKit {
             a.timeline += fr;
             
             if (a.timeline >= a.length) {
-                ofLogVerbose("[Scroller]") << "Animate END";
+//                ofLogVerbose("[Scroller]") << "Animate END";
                 a.active = false;
                 a.timeline = 0;
             }
@@ -206,7 +206,7 @@ namespace ofxKit {
     }
     void Scroller::scrolled( ofMouseEventArgs & e ) {
         if ((int)rect->conf.inner.height <= (int)rect->conf.outer.height) {
-            ofLogError("ofxKit::scroller") << "inside is smaller or same than outside.";
+//            ofLogError("ofxKit::scroller") << "inside is smaller or same than outside.";
             return;
         }
         if (!rect->conf.outer.inside( ofGetMouseX(), ofGetMouseY() )) return;

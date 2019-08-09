@@ -5,11 +5,11 @@
 namespace ofxKit {
 
     struct Event {
-        Rect * u;
+        Rect * rect;
         string type;
-        Event( string t, Rect * uu ) {
+        Event( string t, Rect * r ) {
             type = t;
-            u = uu;
+            rect = r;
         }
     };
 

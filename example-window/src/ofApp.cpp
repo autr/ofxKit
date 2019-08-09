@@ -2,11 +2,11 @@
 
 //--------------------------------------------------------------
 void ofApp::setup(){
-    ofSetLogLevel(OF_LOG_VERBOSE);
     ofSetFrameRate(30);
-    ofLog::setAutoSpace(true);
     ofBackground(20);
     ofEnableAlphaBlending();
+    ofLog::setAutoSpace(true);
+    ofSetLogLevel(OF_LOG_VERBOSE);
     ofSetLoggerChannel(Logger::getLogger());
     
     

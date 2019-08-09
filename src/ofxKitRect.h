@@ -40,8 +40,10 @@ namespace ofxKit {
         ofTexture * ptr;
         bool isNewFrame;
         ofEvent<ofTexture *> updated;
+        ofVec2f align;
         Texture() {
             active = false;
+            align.set(0, 0);
         }
         void set(ofTexture * ptr_) {
             active = true;
@@ -97,7 +99,7 @@ namespace ofxKit {
             scroll = false;
             ratio.set(0,0,1,1);
             minimum.set(0,0,2,2);
-            margins.set(10,10,10,10);
+            margins.set(0,0,0,0);
         }
         RectConf() {
             init();
@@ -105,24 +107,37 @@ namespace ofxKit {
         RectConf(float x, float y, float w, float h, bool fixed = false) {
             init();
             outer.set(x,y,w,h);
+            ratio.set(x,y,w,h);
         }
         RectConf(ofRectangle r, bool fixed = false) {
             init();
             outer.set(r);
+            ratio.set(r);
         }
+        
+        
     };
     
     
     
     static ofRectangle Shrink(ofRectangle r, ofVec4f v) {
-            r.x += v.z;
-            r.y += v.w;
-            r.width -= v.x;
-            r.height -= v.y;
-            r.width -= v.z;
-            r.height -= v.w;
-            return r;
+        r.x += v.z;
+        r.y += v.w;
+        r.width -= v.x;
+        r.height -= v.y;
+        r.width -= v.z;
+        r.height -= v.w;
+        return r;
     }
+    
+    static void ConvertInt(ofRectangle & r) {
+        r.x = (int)r.x;
+        r.y = (int)r.y;
+        r.width = (int)r.width;
+        r.height = (int)r.height;
+    }
+    
+    
     static ofRectangle Shrink(ofRectangle r, float x, float y, float w, float h) {
             return Shrink(r, ofVec4f(x,y,w,h));
     }
@@ -153,10 +168,12 @@ namespace ofxKit {
         vector<Rect *> childr;
         vector<Rect *> global;
         vector<Rect *> ghosts;
-        ofEvent<ofxKit::Event> event;
         
+        ofEvent<ofxKit::Event> event;
         ofEvent<ofxKit::Event> added;
         ofEvent<ofxKit::Event> amended;
+        ofEvent<ofxKit::Rect *> sizeUpdated;
+        ofEventListener onTextureUpdated;
         
         
         /*-- main functions --*/
@@ -205,23 +222,30 @@ namespace ofxKit {
         void setFixed( bool b );
         void setScroll( bool b );
         
+        
         bool inside( Rect * u );
         int getIndex();
         int depth(int d = -1);
         
         
+        string whatAreYou();
+        string whoAreYou();
+        string whereAreYou();
+        
+        
         /*-- dimensions --*/
         
-        void set(float x, float y, float w, float h, bool reload = true);
-        void set(ofRectangle & r, bool reload = true);
+        void setRatios( vector<float> ratios, bool reload );
+        void set(float x, float y, float w, float h, bool reload);
+        void set(ofRectangle r, bool reload);
         
-        void setWidth(float w, bool reload = true);
-        void setHeight(float h, bool reload = true);
+        void setWidth(float w, bool reload);
+        void setHeight(float h, bool reload);
         
         /*-- drawing --*/
         
         
-        void drawWireframes();
+        void drawWireframes(bool drawOuter = true, bool drawInner = false, bool drawObj = false, bool drawScrollers = false);
         void drawScrollers();
         void draw();
         void drawIsomorphic();
@@ -235,6 +259,7 @@ namespace ofxKit {
         void released( int x, int y );
         
         
+//        void setTexture(ofTexture * texture_, int type_, float offsetX_, float offset_Y);
         
         
         

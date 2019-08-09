@@ -6,6 +6,9 @@
 
 namespace ofxKit {
     
+    
+    /*-- syncs an unknown texture into ofxKit::Rect --*/
+    
     class SyncTxt {
     public:
         Rect * rect;
@@ -17,8 +20,7 @@ namespace ofxKit {
             rect = r;
             txt = t;
             onTextureSet = txt->textureSet.newListener([this]( ofTexture * newTexture ){
-                ofLog() << "TEXTURE UPDATED";
-//                texture = newTexture;
+                ofLogNotice("ofxKit") << "syncing texture to rect";
                 rect->texture.set( newTexture );
             });
             

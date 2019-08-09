@@ -8,7 +8,7 @@ namespace ofxKit {
         init();
         conf.type = type;;
         root = root_;
-        set( conf.outer );
+        set( conf.outer, false);
         scroller.init(this);
         if (root) global.push_back(this);
     }
@@ -19,7 +19,7 @@ namespace ofxKit {
         init();
         conf = conf_;
         root = root_;
-        set( conf.outer );
+        set( conf.outer, false );
         scroller.init(this);
         if (root) global.push_back(this);
 //        ofLogNotice("ofxKit") << "creating rect" << conf_.type << conf.type;
@@ -33,6 +33,20 @@ namespace ofxKit {
         origin.set(0.5,0.5);
         transform.set(0,0,1,1);
         ofAddListener(scroller.event , this, &Rect::scrollEvent);
+        
+        /*-- this is handled in drawTextures --*/
+        
+//        onTextureUpdated = texture.updated.newListener([this]( ofTexture * newTexture ){
+//            int w = newTexture->getWidth();
+//            int h = newTexture->getHeight();
+//            if (w > conf.outer.width || h > conf.outer.height) {
+//                ofLogNotice("ofxKit") << "set fixed rect from texture" << w << h;
+//                conf.fixed = true;
+//                set(0,0,w,h,true);
+//            } else {
+////                ofLogNotice("ofxKit") << "sync'd rect does not need scroll" << w << h;
+//            }
+//        });
     }
     
     
@@ -41,7 +55,7 @@ namespace ofxKit {
         Rect * ch = new Rect(conf_);
         ch->root = false;
         amendPtrs(ch, idx);
-        amend();
+//        amend();
 //        ofLogNotice("ofxKit") << "adding rect" << conf_.type;
         return * ch;
         
@@ -52,9 +66,9 @@ namespace ofxKit {
         Rect * ch = new Rect( t );
         ch->root = false;
         ch->conf.type = t;
-//        ofLogNotice("ofxKit") << "adding rect" << t << ch->conf.type;
+        ofLogNotice("ofxKit") << "adding" << ch->whatAreYou();
         amendPtrs(ch, idx);
-        amend();
+//        amend();
         return * ch;
         
     }
@@ -91,11 +105,11 @@ namespace ofxKit {
         
         ofxKit::Interact::get()->add(ch);
         r->global.push_back(ch);
-        amend();
+//        amend();
         
         //        ofLogNotice("ofxKit::Rect") << "adding child @ position:" << idx << "size:" << ch->conf.outer;
         Event e("added", ch);
-        ofLogNotice("ofxKit") << "added" << r->id << ch->conf.type << ch->id << r->global.size() << r->global.back()->conf.type;
+        ofLogNotice("ofxKit") << "added at" << r->global.back()->whereAreYou();
         ofNotifyEvent(r->event, e);
         
         /*-- Return vector --*/
@@ -103,7 +117,19 @@ namespace ofxKit {
 //        return ch;
     }
     
-    
+    string Rect::whatAreYou() {
+        string str = "UNKNOWN";
+        if (conf.type == OFXKIT_COL) str = "OFXKIT_COL";
+        if (conf.type == OFXKIT_ROW) str = "OFXKIT_ROW";
+        if (conf.type == OFXKIT_OBJ) str = "OFXKIT_OBJ";
+        return str;
+    }
+    string Rect::whoAreYou() {
+        return conf.name;
+    }
+    string Rect::whereAreYou() {
+        return id;
+    }
     
     int Rect::getScrollingGrids( vector<Rect *> & list ) {
         if (conf.scroll) list.push_back(this);
@@ -113,13 +139,13 @@ namespace ofxKit {
     
     void Rect::setFixed( bool b ) {
         conf.fixed = b;
-        ( !root ) ? parent->amend() : amend();
+//        ( !root ) ? parent->amend() : amend();
         ofxKit::Event e("setfixed", this);
         ofNotifyEvent(getRoot()->event, e);
     }
     void Rect::setScroll( bool b ) {
         conf.scroll = b;
-        ( !root ) ? parent->amend() : amend();
+//        ( !root ) ? parent->amend() : amend();
         ofxKit::Event e("setscroll", this);
         ofNotifyEvent(getRoot()->event, e);
     }
@@ -138,10 +164,15 @@ namespace ofxKit {
             bool overW = child_.getRight() > inner_.getRight();
             bool overH = child_.getBottom() > inner_.getBottom();
             
-            if (overW) conf.inner.width =  child_.getRight() - inner_.getX() ;
-            if (overH) conf.inner.height =  child_.getBottom() - inner_.getY() ;
+            if (overW) {
+//                ofLogNotice("ofxKit") << "detected width overflow" << id << child_.getRight() << inner_.getRight();
+                conf.inner.width =  child_.getRight() - inner_.getX() ;
+            }
+            if (overH) {
+//                ofLogNotice("ofxKit") << "detected height overflow" << id << child_.getBottom() << inner_.getBottom();
+                conf.inner.height =  child_.getBottom() - inner_.getY() ;
+            }
             if (overW||overH) {
-                ofLog() << "detected overflow" << id << conf.inner.height;
                 scroll = true;
             }
         }
@@ -153,17 +184,18 @@ namespace ofxKit {
         ofRectangle r(x, y, w, h);
         set(r, reload);
     }
-    void Rect::set(ofRectangle & r, bool reload) {
+    void Rect::set(ofRectangle r, bool reload) {
         
-        if (r.width < conf.minimum.width) r.width = conf.minimum.width;
-        if (r.height < conf.minimum.height) r.height = conf.minimum.height;
+//        if (r.width < conf.minimum.width) r.width = conf.minimum.width;
+//        if (r.height < conf.minimum.height) r.height = conf.minimum.height;
         
         conf.outer = r;
-        
         conf.inner = ofxKit::Shrink(conf.outer, conf.margins);
     
-        if (!root) detectOverflow();
-        if (reload) amend();
+//        if (reload && !root) parent->amend();
+//        if (reload && root) amend();
+        Event e("size", this);
+        ofNotifyEvent(event, e);
         
     }
     void Rect::setWidth(float w, bool reload) {
@@ -205,7 +237,7 @@ namespace ofxKit {
         return h;
     }
     
-    void Rect::drawWireframes() {
+    void Rect::drawWireframes(bool drawOuter, bool drawInner, bool drawObj, bool drawScrollers) {
         
         ofPushMatrix();
         float x = ofMap( origin.x, 0, 1, conf.outer.x, conf.outer.getRight());
@@ -220,13 +252,18 @@ namespace ofxKit {
         int i = 0;
         for (auto & ch : global) {
             ofNoFill();
-//            ofLog() << ch->conf.type << ch->id << i;
-//            ofLog() << ch->id << ch->conf.inner.x << ch->conf.inner.y;
-            ofDrawRectangle( ch->conf.outer );
-            ofDrawRectangle( ch->conf.inner );
-            if (ch->conf.type == OFXKIT_OBJ) {
-                ofDrawLine( ch->conf.inner.getTopLeft(), ch->conf.inner.getBottomRight() );
-                ofDrawLine( ch->conf.inner.getTopRight(), ch->conf.inner.getBottomLeft() );
+            bool dontDrawScroller = (!ch->root) ? (ch->parent->scroll && drawScrollers) : false;
+            if (!dontDrawScroller) {
+                if (drawOuter) ofDrawRectangle( ch->conf.outer );
+                if (drawInner) {
+                    ofDrawRectangle( ch->conf.inner );
+                }
+                if (drawObj) {
+                    if (ch->conf.type == OFXKIT_OBJ) {
+                        ofDrawLine( ch->conf.inner.getTopLeft(), ch->conf.inner.getBottomRight() );
+                        ofDrawLine( ch->conf.inner.getTopRight(), ch->conf.inner.getBottomLeft() );
+                    }
+                }
             }
             i += 1;
         }
@@ -300,20 +337,41 @@ namespace ofxKit {
     void Rect::drawTextures() {
         
         if (texture.active) {
-//                ofLog() << "texture" << id;
-            ofRectangle r(0,0,texture.ptr->getWidth(), texture.ptr->getHeight());
-            bool isWider =  r.width > (int)conf.outer.width;
-            bool isTaller = r.height > (int)conf.outer.height;
+            
+            /*-- set ofxKit::Rect to texture size --*/
+            
+            ofRectangle parent_(  parent->conf.outer );
+            ofRectangle inner_( conf.inner );
+            ofRectangle outer_( conf.outer );
+            ofRectangle texture_(parent_);
+            texture_.width = texture.ptr->getWidth();
+            texture_.height = texture.ptr->getHeight();
+            
+            bool isWider =  texture_.width > (int)outer_.width;
+            bool isTaller = texture_.height > (int)outer_.height;
+            
             if (isWider || isTaller) {
-//                r = Shrink( r , conf.margins );
-                if (isWider) setWidth((int)r.width);
-                if (isTaller) setHeight((int)r.height);
+                conf.fixed = true;
+                if (isWider) setWidth((int)texture_.width, false);
+                if (isTaller) setHeight((int)texture_.height, false);
                 parent->amend();
             }
-            ofRectangle parent_outer_(parent->conf.outer);
-            ofRectangle draw_(  parent_outer_ );
-            ofRectangle crop_(  parent_outer_.x - conf.inner.x, parent_outer_.y - conf.inner.y, parent_outer_.width, parent_outer_.height );
-//            draw_.x =
+            
+            /*-- crop visible area --*/
+            
+            ofRectangle crop_(  parent_.x - inner_.x, parent_.y - inner_.y, parent_.width, parent_.height );
+            
+            /*-- align from ofxKit::Texture 0-1 align variable --*/
+            
+            ofRectangle draw_(parent_);
+            draw_.x += ofMap( texture.align.x , 0, 1, 0, parent_.width - texture_.width );
+            draw_.y += ofMap( texture.align.y , 0, 1, parent_.height - texture_.height, 0 );
+            
+            /*-- draw cropped --*/
+            
+            ConvertInt(draw_);
+            ConvertInt(crop_);
+            
             texture.ptr->drawSubsection(draw_, crop_);
         }
         
@@ -336,15 +394,24 @@ namespace ofxKit {
     void Rect::scrolled( ofMouseEventArgs & e ) {
         if (scroll) {
             scroller.scrolled(e);
+            Event e("scrolled", this);
+            ofNotifyEvent(event, e);
         }
     }
     
     void Rect::pressed( int x, int y ) {
         
+        ofLogNotice("ofxKit") << "pressed" << id;
+        Event e("pressed", this);
+        ofNotifyEvent(event, e);
     }
     void Rect::dragged( int x, int y ) {
+        Event e("dragged", this);
+        ofNotifyEvent(event, e);
     }
     void Rect::released( int x, int y ) {
+        Event e("released", this);
+        ofNotifyEvent(event, e);
     }
     
     
@@ -371,11 +438,29 @@ namespace ofxKit {
         
         vector<int> pos;
         location = position(pos);
-        string ss = "|";
+        string ss = "0";
         for (auto & i : location) {
-            ss += ">"+ofToString(i + 1);
+            ss += "-"+ofToString(i);
         }
         id = ss;
+    }
+    
+    void Rect::setRatios( vector<float> ratios, bool reload ) {
+        if (ratios.size() == 0) return;
+        int i = 0;
+        bool isCol = (conf.type == OFXKIT_COL || conf.type == OFXKIT_OBJ);
+        bool isRow = (conf.type == OFXKIT_ROW);
+        for (auto & ch : childr) {
+            if (i < ratios.size()) {
+                if (isCol) ch->conf.ratio.height = ratios[i];
+                if (isRow) ch->conf.ratio.width = ratios[i];
+            } else {
+                if (isCol) ch->conf.ratio.height = ratios.back();
+                if (isRow) ch->conf.ratio.width = ratios.back();
+            }
+            i += 1;
+        }
+//        if (reload) amend();
     }
     
     void Rect::amend() {
@@ -398,24 +483,28 @@ namespace ofxKit {
         
         /*-- get totals --*/
         
+        bool hadFixed;
+        
         for (auto & c : childr) {
             
             bool isFixed = c->conf.fixed;
             bool isGhost = c->conf.ghost;
+            if (isFixed) hadFixed = true;
             
             /*-- get total without fixed widths and heights --*/
             
             if (!isGhost) {
                 
                 if (isCol && isFixed) {
-                    
+//                    ofLog() << "fixed";
+//                    ofLog() << "A fixed" << conf.inner.height << c->conf.outer.height;
                     ratio_.width += c->conf.ratio.width;
-                    wrap_.height -= inner_.height;
+                    wrap_.height -= c->conf.outer.height;
                     
                 } else if (isRow && isFixed) {
                     
                     ratio_.height += c->conf.ratio.height;
-                    wrap_.width -= inner_.width;
+                    wrap_.width -= c->conf.outer.width;
                 } else {
                     
                     ratio_.width += c->conf.ratio.width;
@@ -424,6 +513,13 @@ namespace ofxKit {
             }
         }
         
+//        if (hadFixed) {
+//            ofLog() << "B " << id << conf.inner.height << wrap_.height << ratio_.height;
+//        }
+        
+        
+//        if (id == "0-0") ofLogNotice("ofxKit") << "A-1. totals" << id << ratio_.width << ratio_.height;
+//        if (id == "0-0-0") ofLogNotice("ofxKit") << "B-1. totals" << id << ratio_.width << ratio_.height;
         
         
         ofRectangle move_( wrap_ );
@@ -445,18 +541,26 @@ namespace ofxKit {
                 ofRectangle outer_( c->conf.outer );
                 ofRectangle iter_( wrap_ );
                 
+//                if (id == "0-0") ofLogNotice("ofxKit") << "A-2. proportion" << id << ww << hh;
+//                if (id == "0-0-0") ofLogNotice("ofxKit") << "B-2. proportion" << id << ww << hh;
+                
                 if (isCol) {
                     iter_.y = move_.y;
                     iter_.height = hh;
+                    iter_.width = inner_.width;
                 }
                 if (isRow) {
+//                    ofLog() << "is row";
                     iter_.x = move_.x;
                     iter_.width = ww;
+                    iter_.height = inner_.height;
                 }
                 if (isFixed && isCol) {
+//                    ofLog() << "fixed";
                     iter_.height = outer_.height;
                 }
                 if (isFixed && isRow) {
+//                    ofLog() << "fixed";
                     iter_.width = outer_.width;
                 }
                 
@@ -464,6 +568,8 @@ namespace ofxKit {
                 
                 /*-- set outer --*/
                 
+//                if (id == "0-0") ofLogNotice("ofxKit") << "A-3. final" << id << iter_.width << iter_.height;
+//                ofLogNotice("ofxKit") << "setting" << id << iter_.width << iter_.height;
                 c->set(iter_, false);
                 
                 
@@ -475,7 +581,7 @@ namespace ofxKit {
                 c->amend();
             }
         }
-        
+        if (!root) detectOverflow();
         
     }
     
@@ -559,7 +665,8 @@ namespace ofxKit {
     }
     
     void Rect::update() {
-        
+//        if (id == "0-0") ofLog() << "row width" << conf.inner.width;
+//        if (id == "0-0-0") ofLog() << "col width" << conf.outer.width << conf.inner.width;
         if (scroll) scroller.update();
         for (auto & ch : childr) ch->update();
     }
