@@ -55,7 +55,10 @@ namespace ofxKit {
         }
         void mousePressed(ofMouseEventArgs & e) {
             Rect * selected = findFromXY( e.x, e.y );
-            if (selected) selected->pressed(e.x, e.y);
+            if (selected) {
+                ofLogNotice("ofxKit::Interact") << "rect pressed";
+                selected->pressed(e.x, e.y);
+            }
         }
         void mouseScrolled(ofMouseEventArgs & e) {
             

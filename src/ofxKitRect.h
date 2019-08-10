@@ -33,13 +33,35 @@
 
 namespace ofxKit {
     
-//    class Texture {
-//    public:
-//        ofTexture * texture;
-//        float lastUpdated;
-//    }
     
-    struct Error;
+    class Texture {
+    public:
+        bool active;
+        ofTexture * ptr;
+        bool isNewFrame;
+        ofEvent<ofTexture *> updated;
+        ofVec2f align;
+        Texture() {
+            active = false;
+            align.set(0, 0);
+        }
+        void set(ofTexture * ptr_) {
+            active = true;
+            ptr = ptr_;
+            isNewFrame = true;
+            ofNotifyEvent(updated, ptr);
+        }
+        
+        ofTexture * get() {
+            isNewFrame = false;
+            return ptr;
+        }
+        
+        void init() {
+            isNewFrame = false;
+        }
+    };
+    
     struct Event;
     
     struct RectStyle {
@@ -57,10 +79,10 @@ namespace ofxKit {
         }
     };
     
-    struct RectConf {
+    class RectConf {
+    public:
         string name;
         int type;
-        bool root;
         bool fixed;
         bool ghost;
         bool scroll;
@@ -69,35 +91,53 @@ namespace ofxKit {
         ofRectangle inner;
         ofRectangle minimum;
         ofVec4f margins;
-        RectConf() {
+        void init() {
             name = "";
             type = OFXKIT_COL;
-            root = false;
             fixed = false;
             ghost = false;
-            root = false;
             scroll = false;
             ratio.set(0,0,1,1);
             minimum.set(0,0,2,2);
             margins.set(0,0,0,0);
         }
+        RectConf() {
+            init();
+        }
+        RectConf(float x, float y, float w, float h, bool fixed = false) {
+            init();
+            outer.set(x,y,w,h);
+            ratio.set(x,y,w,h);
+        }
+        RectConf(ofRectangle r, bool fixed = false) {
+            init();
+            outer.set(r);
+            ratio.set(r);
+        }
+        
+        
     };
     
-    struct TextureConf {
-        ofTexture ** texture;
-        ofRectangle bounds;
-    };
     
     
     static ofRectangle Shrink(ofRectangle r, ofVec4f v) {
-            r.x += v.z;
-            r.y += v.w;
-            r.width -= v.x;
-            r.height -= v.y;
-            r.width -= v.z;
-            r.height -= v.w;
-            return r;
+        r.x += v.z;
+        r.y += v.w;
+        r.width -= v.x;
+        r.height -= v.y;
+        r.width -= v.z;
+        r.height -= v.w;
+        return r;
     }
+    
+    static void ConvertInt(ofRectangle & r) {
+        r.x = (int)r.x;
+        r.y = (int)r.y;
+        r.width = (int)r.width;
+        r.height = (int)r.height;
+    }
+    
+    
     static ofRectangle Shrink(ofRectangle r, float x, float y, float w, float h) {
             return Shrink(r, ofVec4f(x,y,w,h));
     }
@@ -107,14 +147,15 @@ namespace ofxKit {
         
         RectConf conf;
         RectStyle style;
-        ofTexture ** texture;
+//        ofTexture ** texture;
+        Texture texture;
         
         bool root;
         bool scroll;
         string id;
         
         float opacity;
-        ofRectangle offset;
+        ofVec2f offset;
         ofRectangle transform;
         ofVec3f origin;
         
@@ -127,89 +168,99 @@ namespace ofxKit {
         vector<Rect *> childr;
         vector<Rect *> global;
         vector<Rect *> ghosts;
-        vector<ofxKit::Error> errors;
-        ofEvent<ofxKit::Event> event;
         
+        ofEvent<ofxKit::Event> event;
         ofEvent<ofxKit::Event> added;
         ofEvent<ofxKit::Event> amended;
+        ofEvent<ofxKit::Rect *> sizeUpdated;
+        ofEventListener onTextureUpdated;
         
         
-        void detectOverflow(bool a);
+        /*-- main functions --*/
         
-        Rect *& operator[] (size_t i);
+        Rect(int type = OFXKIT_COL, bool root_ = true);
+        Rect(RectConf conf_, bool root_ = true);
         
-        Rect();
-        Rect(float x, float y, float w, float h);
-        Rect(int t);
-        
-        int getScrollingGrids( vector<Rect *> & list );
-        
-        void setFixed( bool b );
-        void setScroll( bool b );
-        
-        void scrollEvent(string & e);
-        void set(float x, float y, float w, float h, bool a = true);
-        void set(ofRectangle & r, bool a = true);
-        void setWidth(float w, bool a = true);
-        void setHeight(float h, bool a = true);
-        
-        Rect * get(vector<int> idx);
-        
-        
-        
-        vector<float> getWidths();
-        vector<float> getHeights();
-        
-        void drawWireframes();
-        void drawScrollers();
-        
-        void draw(bool iso = false);
-        
-        void scrolled( ofMouseEventArgs & e );
-        
-        void pressed( int x, int y );
-        void dragged( int x, int y );
-        void released( int x, int y );
-        
-        vector<int> & position(vector<int> & pos);
-        
-        void tag();
-        void amend();
+        Rect & add(int t = OFXKIT_COL, int idx = -1);
+        Rect & add(RectConf conf_, int idx = -1);
+ 
         void update();
         
-        int depth(int d = -1);
-        
-        bool hasError();
-        Rect * getRoot();
-        
-        void remove(vector<Rect *> & v, Rect * c);
-        
-        void clear();
-        
-        
-        void remove();
-        
-        vector<Rect *> collect();
-        
-        bool isInvalid( Rect * g );
-        
+        void amend();
         bool move( Rect * u , int idx = -1);
         
-        Rect & add(Rect * ch, int idx = -1);
+        void remove();
+        vector<Rect *> collect();
+        void remove(vector<Rect *> & v, Rect * c);
+        void clear();
         
-        Rect & add(int t, int idx = -1);
+        /*-- internal utilities --*/
         
+        bool isInvalid( Rect * g );
+        void tag();
         string getLocationString(string l = "");
-        
-        int getIndex();
-        
+        void amendPtrs( Rect * ch, int idx);
+        Rect * getRoot();
+        void detectOverflow();
+        void scrollEvent(string & e);
+        int getScrollingGrids( vector<Rect *> & list );
         
         int getFirstAndInColCount(int i);
         int getLastAndInColCount(int i);
         int getLastAndInRowCount(int i);
         
+        ofVec2f & getOffsetXY(ofVec2f & o);
+        
+        
+        /*-- external utilities --*/
+        
+        Rect * get(vector<int> idx);
+        vector<int> & position(vector<int> & pos);
+        
+        vector<float> getWidths();
+        vector<float> getHeights();
+        void setFixed( bool b );
+        void setScroll( bool b );
+        
         
         bool inside( Rect * u );
+        int getIndex();
+        int depth(int d = -1);
+        
+        
+        string whatAreYou();
+        string whoAreYou();
+        string whereAreYou();
+        
+        
+        /*-- dimensions --*/
+        
+        void setRatios( vector<float> ratios, bool reload );
+        void set(float x, float y, float w, float h, bool reload);
+        void set(ofRectangle r, bool reload);
+        
+        void setWidth(float w, bool reload);
+        void setHeight(float h, bool reload);
+        
+        /*-- drawing --*/
+        
+        
+        void drawWireframes(bool drawOuter = true, bool drawInner = false, bool drawObj = false, bool drawScrollers = false);
+        void drawScrollers();
+        void draw();
+        void drawIsomorphic();
+        void drawTextures();
+        
+        /*-- interactions --*/
+        
+        void scrolled( ofMouseEventArgs & e );
+        void pressed( int x, int y );
+        void dragged( int x, int y );
+        void released( int x, int y );
+        
+        
+//        void setTexture(ofTexture * texture_, int type_, float offsetX_, float offset_Y);
+        
         
         
     };

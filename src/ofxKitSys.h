@@ -33,11 +33,11 @@ namespace ofxKit {
     public:
         ByteSize * size;
         std::tm * date;
+        string path;
         File(string p) {
+            path = p;
             open(p);
             size = new ByteSize(getSize());
-            ofLog() << getFileName() << size->human;
-
             struct stat t_stat;
             stat(p.c_str(), &t_stat);
             date = localtime(&t_stat.st_ctime);
@@ -52,6 +52,9 @@ namespace ofxKit {
     class Directory : public ofDirectory {
     public:
         vector<ofFile> files;
+        Directory() {
+            
+        }
         Directory(string location, vector<string> exts = {}) {
             init(location, exts);
         }
@@ -61,7 +64,7 @@ namespace ofxKit {
                 location = ofSystem("eval echo " + location + "");
                 location = location.substr(0, location.size() - 1);
             }
-            
+            close();
             open(location);
             if (isDirectory()) {
                 for(auto & ext : exts) allowExt(ext);
@@ -117,16 +120,6 @@ namespace ofxKit {
             } catch (exception & e) {
                 ofLogError("could not convert byte size");
                 return 0;
-            }
-        }
-        static Path open(string text = "Open", bool folders = false, string root = "/") {
-            
-            ofFileDialogResult p = ofSystemLoadDialog(text, folders, root);
-            
-            if( p.bSuccess ) {
-                return Path(p.fileName, p.filePath, p.bSuccess);
-            } else {
-                return Path("", "", p.bSuccess);
             }
         }
         
