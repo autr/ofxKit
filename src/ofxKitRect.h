@@ -149,7 +149,8 @@ namespace ofxKit {
         RectStyle style;
 //        ofTexture ** texture;
         Texture texture;
-        
+
+        bool inited;
         bool root;
         bool scroll;
         string id;

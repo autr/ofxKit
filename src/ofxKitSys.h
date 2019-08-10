@@ -48,7 +48,20 @@ namespace ofxKit {
             return ss.str();
         }
     };
-    
+
+
+    static string ExpandTilda(string location) {
+
+        if (location.substr(0,1) == "~") {
+            location = ofSystem("eval echo " + location + "");
+            location = location.substr(0, location.size() - 1);
+            ofLogNotice("ofxKit") << "converting home path" << location;
+        }
+
+        return location;
+    }
+
+
     class Directory : public ofDirectory {
     public:
         vector<ofFile> files;
@@ -59,13 +72,15 @@ namespace ofxKit {
             init(location, exts);
         }
         void init(string location, vector<string> exts = {}) {
-            
-            if (location.substr(0,1) == "~") {
-                location = ofSystem("eval echo " + location + "");
-                location = location.substr(0, location.size() - 1);
-            }
+
+            location = ExpandTilda(location);
             close();
+            try {
+
             open(location);
+//            if(!exists()){
+//                create(true);
+//            }
             if (isDirectory()) {
                 for(auto & ext : exts) allowExt(ext);
                 listDir();
@@ -78,12 +93,12 @@ namespace ofxKit {
             } else {
                 ofLogError("ofxKit") << location << "is not a directory";
             }
+            } catch  (exception & e) {
+                ofLogError("ofxKit") << "could not open" << location;
+            }
         }
     };
-    
-    
-    
-    
+
     struct Path {
         string name;
         string path;
@@ -99,7 +114,8 @@ namespace ofxKit {
         ByteSize * available;
         ByteSize * free;
         DiskSpace( string location ) {
-            
+
+            location = ExpandTilda(location);
             std::filesystem::space_info devi = std::filesystem::space(location);
             capacity = new ByteSize(devi.capacity);
             free = new ByteSize(devi.free);

@@ -33,6 +33,7 @@ namespace ofxKit {
         origin.set(0.5,0.5);
         transform.set(0,0,1,1);
         ofAddListener(scroller.event , this, &Rect::scrollEvent);
+        inited = false;
         
         /*-- this is handled in drawTextures --*/
         
@@ -669,6 +670,11 @@ namespace ofxKit {
 //        if (id == "0-0-0") ofLog() << "col width" << conf.outer.width << conf.inner.width;
         if (scroll) scroller.update();
         for (auto & ch : childr) ch->update();
+
+        if (!inited) {
+            amend();
+            inited = true;
+        }
     }
     void Rect::drawScrollers() {
         
