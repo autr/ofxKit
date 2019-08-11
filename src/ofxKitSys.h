@@ -123,11 +123,18 @@ namespace ofxKit {
             success = s;
         }
     };
-    struct DiskSpace {
+    class DiskSpace {
+    public:
         ByteSize * capacity;
         ByteSize * available;
         ByteSize * free;
+        DiskSpace( ) {
+
+        }
         DiskSpace( string location ) {
+            set (location);
+        }
+        void set( string location ) {
 
             location = ExpandTilda(location);
             std::filesystem::space_info devi = std::filesystem::space(location);
