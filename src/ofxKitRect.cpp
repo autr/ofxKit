@@ -175,6 +175,8 @@ namespace ofxKit {
             }
             if (overW||overH) {
                 scroll = true;
+            } else {
+                scroll = false;
             }
         }
         
@@ -340,7 +342,7 @@ namespace ofxKit {
         if (texture.active) {
             
             /*-- set ofxKit::Rect to texture size --*/
-            
+
             ofRectangle parent_(  parent->conf.outer );
             ofRectangle inner_( conf.inner );
             ofRectangle outer_( conf.outer );
@@ -365,8 +367,8 @@ namespace ofxKit {
             /*-- align from ofxKit::Texture 0-1 align variable --*/
             
             ofRectangle draw_(parent_);
-            draw_.x += ofMap( texture.align.x , 0, 1, 0, parent_.width - texture_.width );
-            draw_.y += ofMap( texture.align.y , 0, 1, parent_.height - texture_.height, 0 );
+            crop_.x += ofMap( texture.align.x , 0, 1, 0, -(parent_.width - texture_.width) );
+            crop_.y += ofMap( texture.align.y , 0, 1, 0, -(parent_.height - texture_.height) );
             
             /*-- draw cropped --*/
             
@@ -681,7 +683,7 @@ namespace ofxKit {
         for (auto & ch : childr) ch->update();
 
         if (!inited) {
-            ofLog() << "ofxKit" << "inited amend";
+//            ofLog() << "ofxKit" << "inited amend";
             amend();
             inited = true;
         }

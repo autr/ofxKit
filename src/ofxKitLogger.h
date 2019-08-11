@@ -139,17 +139,19 @@ namespace ofxKit {
                     console.erase(0, console.find("\n") + 1);
                     lines -= 1;
                 }
-                bounds = GetStringBounds(console, rect->conf.inner, 20);
+                bounds = GetStringBounds(console, rect->conf.inner, 0);
                 
                 if (bounds.width != fbo.getWidth() || bounds.height != fbo.getHeight() ) {
 //                    ofLogNotice("ofxKit") << "resetting console logger texture";
-                    fbo.allocate((int)bounds.width + 20, (int)bounds.height + 20, GL_RGBA, 1);
+                    fbo.allocate((int)bounds.width, (int)bounds.height, GL_RGBA, 1);
                 }
                 fbo.begin();
                 ofClear(255,0);
                 ofSetColor(255);
-                ofDrawBitmapString(console, 10,  10 );
+                ofDrawBitmapString(console, 0,  0 );
                 fbo.end();
+                rect->conf.margins.set(10,10,10,10);
+                rect->texture.align.set(0, 1);
                 rect->texture.set( &fbo.getTexture() );
                 lastConsole = console;
             }
