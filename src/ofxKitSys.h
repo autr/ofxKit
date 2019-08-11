@@ -57,6 +57,7 @@ namespace ofxKit {
     static string ExpandTilda(string location) {
         
         if (location.substr(0,1) == "~") {
+            ofLogNotice("ofxKit") << "expanding tilda";
             location = ofSystem("eval echo " + location + "");
             location = location.substr(0, location.size() - 1);
             ofLogNotice("ofxKit") << "converting home path" << location;
@@ -122,11 +123,18 @@ namespace ofxKit {
             success = s;
         }
     };
-    struct DiskSpace {
+    class DiskSpace {
+    public:
         ByteSize * capacity;
         ByteSize * available;
         ByteSize * free;
+        DiskSpace( ) {
+
+        }
         DiskSpace( string location ) {
+            set (location);
+        }
+        void set( string location ) {
 
             location = ExpandTilda(location);
             std::filesystem::space_info devi = std::filesystem::space(location);
@@ -156,6 +164,7 @@ namespace ofxKit {
             vector<string> vols;
             string str;
 #ifdef TARGET_OSX
+            ofLogNotice("ofxKit") << "listing vols";
             string location = "/Volumes";
             str = ofSystem("ls " + location);
 #endif

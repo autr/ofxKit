@@ -192,18 +192,14 @@ namespace ofxKit {
         }
         
         if ((drawOuter || drawBar)&&barsInited) {
-            
-            try {
-                ofEnableAlphaBlending();
-                ofFill();
-                ofSetColor(s.barOuterColor, hoverScale * s.barOuterColor[3]);
-                ofDrawRectangle( scrollBarOuter );
-                ofFill();
-                ofSetColor(s.barInnerColor, hoverOpacity);
-                ofDrawRectRounded( scrollBar , s.barRounded * scrollBar.width);
-            } catch (std::exception & err) {
-                ofLogNotice("ofxKitScroller") << "could not draw scroller";
-            }
+
+            ofEnableAlphaBlending();
+            ofFill();
+            ofSetColor(s.barOuterColor, hoverScale * s.barOuterColor[3]);
+            ofDrawRectangle( scrollBarOuter );
+            ofFill();
+            ofSetColor(s.barInnerColor, hoverOpacity);
+            ofDrawRectRounded( scrollBar , s.barRounded * scrollBar.width);
         }
         
         
