@@ -464,8 +464,17 @@ namespace ofxKit {
 //        if (reload) amend();
     }
     
-    void Rect::amend() {
+    void Rect::amend(float inSeconds) {
         
+        if (inSeconds > 0) {
+            
+            if (!needsAmend) {
+                amendDelay = inSeconds;
+                amendTimestamp = ofGetElapsedTimef();
+                needsAmend = true;
+            }
+            return;
+        }
         
         if (!conf.ghost) tag();
         
@@ -672,8 +681,14 @@ namespace ofxKit {
         for (auto & ch : childr) ch->update();
 
         if (!inited) {
+            ofLog() << "ofxKit" << "inited amend";
             amend();
             inited = true;
+        }
+        if (needsAmend && ofGetElapsedTimef() > amendTimestamp + amendDelay) {
+            ofLog() << "ofxKit" << "delayed amend" << amendTimestamp;
+            amend();
+            needsAmend = false;
         }
     }
     void Rect::drawScrollers() {

@@ -155,6 +155,10 @@ namespace ofxKit {
         bool scroll;
         string id;
         
+        bool needsAmend;
+        float amendDelay;
+        float amendTimestamp;
+        
         float opacity;
         ofVec2f offset;
         ofRectangle transform;
@@ -187,7 +191,7 @@ namespace ofxKit {
  
         void update();
         
-        void amend();
+        void amend(float inSeconds = 0);
         bool move( Rect * u , int idx = -1);
         
         void remove();

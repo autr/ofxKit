@@ -48,17 +48,30 @@ namespace ofxKit {
             return ss.str();
         }
     };
+    
+    static string HumanTime( float timeInSeconds ) {
+        return ofToString( (int)timeInSeconds/60 ) + "m" + ofToString( (int)fmod(timeInSeconds, 60) ) + "s";
+    }
 
 
     static string ExpandTilda(string location) {
-
+        
         if (location.substr(0,1) == "~") {
             location = ofSystem("eval echo " + location + "");
             location = location.substr(0, location.size() - 1);
             ofLogNotice("ofxKit") << "converting home path" << location;
         }
-
+        
         return location;
+    }
+    static string ExpandFwdSlash(string path) {
+        
+        if (path.substr(path.size() - 1,1) != "/") {
+            ofLog() << "ExpandFwdSlash" << path << path.substr(path.size() - 1,1);
+            path += "/";
+        }
+        
+        return path;
     }
 
 
