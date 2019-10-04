@@ -4,4 +4,6 @@
 *.plist
 *.app/
 bin
-
+*.qbs
+*.qbs.user
+*-Desktop-Debug

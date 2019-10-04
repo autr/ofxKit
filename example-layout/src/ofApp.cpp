@@ -11,6 +11,8 @@ void ofApp::setup(){
     
 //    layout->add( OFXKIT_ROW );
 //    layout->add( OFXKIT_ROW );
+
+
     ofxKit::Rect * r = &layout->add( OFXKIT_ROW );
     r->conf.margins.set(20,20,20,20);
     ofxKit::Rect * thing = &r->add( OFXKIT_COL );
@@ -21,8 +23,8 @@ void ofApp::setup(){
     ofxKit::Rect * c = &r->add( OFXKIT_COL );
     ofxKit::Rect * cc = &c->add( OFXKIT_OBJ );
     cc->conf.margins.set(10,10,10,10);
-    cc->conf.fixed = true;
-    cc->setHeight(600, true);
+//    cc->conf.fixed = true;
+//    cc->setHeight(600);
     
     ofxKit::Sys::volumes();
     ofxKit::DiskSpace dev("/Volumes/Macintosh HD/");
@@ -40,12 +42,13 @@ void ofApp::update(){
 //--------------------------------------------------------------
 void ofApp::draw(){
     ofBackground(20);
-//    layout->set(20,20,ofGetWidth() - 40,ofGetHeight()/2);
+    layout->set(20,20,ofGetWidth() - 40,ofGetHeight()/2);
+    layout->amend();
     
     ofSetColor(255);
     ofSetLineWidth(2);
-    layout->drawWireframes();
-    layout->drawScrollers();
+    layout->drawWireframes(true, false, true);
+//    layout->drawScrollers();
     
     
 }

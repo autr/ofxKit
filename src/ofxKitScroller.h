@@ -6,8 +6,6 @@
 
 
 namespace ofxKit {
-    
-    class Rect;
 
     struct ofxScrollAnim {
         float length;
@@ -43,6 +41,7 @@ namespace ofxKit {
             barHoverSpeed = 0.4;
             barInnerColor.set(255);
             barOuterColor.set(255,255,255,80);
+
         }
     };
 
@@ -68,9 +67,11 @@ namespace ofxKit {
         float hoverOpacity;
         float hoverBarTimestamp;
         float hoverScale;
+        float dpi;
         bool lastInside;
         bool lastInsideBar;
         bool barsInited;
+        bool debug;
         
         
         float easeOut(float v, float minIn, float maxIn, float minOut, float maxOut);
@@ -85,18 +86,17 @@ namespace ofxKit {
         
         float updateTimestamp;
         ofEvent<string &> event; // innerBoxResized, outerBoxResized, drawing, scrolled
-        ofxKit::Rect * rect;
+
+        ofRectangle outer, inner;
         float scrollY;
+        float scrollYDest;
         Scroller();
-        Scroller(ofxKit::Rect * r);
-        void init(ofxKit::Rect * r);
         void update();
         void draw();
         void scrolled( ofMouseEventArgs & e );
         
         bool isDragged;
-        ofPoint dragOrigin;
-        ofRectangle dragOriginBar;
+        float dragOriginY;
         
         void pressed( int x, int y );
         void dragged( int x, int y );

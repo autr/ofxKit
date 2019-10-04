@@ -22,16 +22,18 @@ namespace ofxKit {
 
     void Scroller::setScrollBar() {
         
-        float oY = rect->conf.outer.y;
-        float oH = rect->conf.outer.height;
-        float iY = rect->conf.inner.y;
-        float iH = rect->conf.inner.height;
-        
-        
-        scrollBarOuter.x = rect->conf.outer.getTopRight().x - s.barOuterWidth;
-        scrollBarOuter.y = rect->conf.outer.y;
-        scrollBarOuter.width = s.barOuterWidth;
-        scrollBarOuter.height = rect->conf.outer.height;
+        float oY = outer.y;
+        float oH = outer.height;
+        float iY = -scrollY;
+        float iH = inner.height;
+
+        float bow = s.barOuterWidth;
+        float biw = s.barWidth;
+
+        scrollBarOuter.x = outer.getTopRight().x - bow;
+        scrollBarOuter.y = outer.y;
+        scrollBarOuter.width = bow;
+        scrollBarOuter.height = outer.height;
         
         
         scrollBar.set( scrollBarOuter );
@@ -44,21 +46,21 @@ namespace ofxKit {
         float toB = oY + oH - scrollBar.height;
         
         scrollBar.y = ofMap( iY, fromB, fromA, toB, toA );
-        
+
         if (scrollBar.y < oY) {
             scrollBar.height -= oY - scrollBar.y;
             scrollBar.y = oY;
         }
         float ibr = scrollBar.getBottomRight().y;
-        float obr = rect->conf.outer.getBottomRight().y;
+        float obr = outer.getBottomRight().y;
         if (ibr > obr) {
             scrollBar.height -= ibr - obr;
         }
         
-        float boop = s.barOuterWidth - ( s.barPadding * 2 );
-        scrollBar.width = ( boop * hoverScale ) + ( s.barWidth * (1-hoverScale) );
-        scrollBar.x = rect->conf.outer.getTopRight().x - scrollBar.width - s.barPadding;
-        scrollBar.y += s.barPadding;
+        float boop = bow - ( s.barPadding * 2 );
+        scrollBar.width = ( boop * hoverScale ) + ( biw * (1-hoverScale) );
+        scrollBar.x = outer.getTopRight().x - scrollBar.width - s.barPadding;
+//        scrollBar.y += s.barPadding;
         scrollBar.height -= s.barPadding * 2;
         
         if (!barsInited) barsInited = true;
@@ -66,25 +68,14 @@ namespace ofxKit {
     }
 
     void Scroller::set() {
-        
-        if (rect->conf.inner.y != scrollY) {
-            rect->conf.inner.y = scrollY;
-            setScrollBar();
-            string a = "scrolled";
-            ofNotifyEvent(event, a);
-        }
+
+        setScrollBar();
+        string a = "scrolled";
+        ofNotifyEvent(event, a);
     }
     Scroller::Scroller() {
-        
-    }
-    Scroller::Scroller(ofxKit::Rect * r) {
-        init(r);
-    }
-    
-    void Scroller::init(ofxKit::Rect * r) {
-        
         lastDirection = 9;
-        scrollY = 999999;
+        scrollY = 0;
         velocity = 0;
         timestamp = 0;
         activeTimestamp = 0;
@@ -94,17 +85,27 @@ namespace ofxKit {
         hoverBarTimestamp = 0;
         hoverScale = 0;
         barsInited = false;
-        rect = r;
+        dpi = ((ofAppGLFWWindow*)ofGetWindowPtr())->getPixelScreenCoordScale();
     }
-    
+
     void Scroller::update() {
-        if (rect == nullptr) return;
-        if (rect->conf.inner.height < rect->conf.outer.height) return;
+        bool useBounce = false;
+        if (!useBounce) {
+
+
+            float total = (inner.height - outer.height);
+            if (scrollYDest < 0) scrollYDest = 0;
+            if (scrollYDest > total) scrollYDest = total;
+            scrollY = (scrollY * 0.5) + (scrollYDest * 0.5);
+            set();
+
+            return;
+        }
         
         float t = ofGetElapsedTimef();
         
         if (scrollY == 999999) {
-            scrollY = rect->conf.inner.y;
+            scrollY = inner.y;
             set();
         }
         
@@ -137,20 +138,20 @@ namespace ofxKit {
             set();
         }
         
-        bool innerDiff = lastInnerHeight != rect->conf.inner.height || lastInnerWidth != rect->conf.inner.width;
-        bool outerDiff = lastOuterHeight != rect->conf.outer.height || lastOuterWidth != rect->conf.outer.width;
+        bool innerDiff = lastInnerHeight != inner.height || lastInnerWidth != inner.width;
+        bool outerDiff = lastOuterHeight != outer.height || lastOuterWidth != outer.width;
         
         if (innerDiff || outerDiff) {
             
             if (innerDiff) {
-                lastInnerHeight = rect->conf.inner.height;
-                lastInnerWidth = rect->conf.inner.width;
+                lastInnerHeight = inner.height;
+                lastInnerWidth = inner.width;
                 string a = "innerBoxResized";
                 ofNotifyEvent(event, a);
             }
             if (outerDiff) {
-                lastOuterHeight = rect->conf.outer.height;
-                lastOuterWidth = rect->conf.outer.width;
+                lastOuterHeight = outer.height;
+                lastOuterWidth = outer.width;
                 string a = "outerBoxResized";
                 ofNotifyEvent(event, a);
             }
@@ -161,7 +162,7 @@ namespace ofxKit {
 
     void Scroller::draw() {
         
-        if (rect->conf.inner.height < rect->conf.outer.height) return;
+        if (inner.height < outer.height) return;
         
         float t = ofGetElapsedTimef();
         
@@ -169,7 +170,7 @@ namespace ofxKit {
         if (isInsideBar != lastInsideBar) hoverBarTimestamp = t;
         lastInsideBar = isInsideBar;
         
-        bool isInside = rect->conf.outer.inside( ofGetMouseX(), ofGetMouseY() );
+        bool isInside = outer.inside( ofGetMouseX(), ofGetMouseY() );
         if (isInside != lastInside) hoverTimestamp = t;
         lastInside = isInside;
         
@@ -204,97 +205,99 @@ namespace ofxKit {
         
         
     }
+
     void Scroller::scrolled( ofMouseEventArgs & e ) {
-        if ((int)rect->conf.inner.height <= (int)rect->conf.outer.height) {
-//            ofLogError("ofxKit::scroller") << "inside is smaller or same than outside.";
-            return;
+
+        float d = ( e.scrollY * 4 );
+
+        bool useBounce = false;
+
+        if (!useBounce) {
+            scrollYDest = scrollYDest - d;
+            set();
+        } else {
+
+            float t = ofGetElapsedTimef();
+            bool directionUp = (e.scrollY > 0);
+            bool directionDown = (e.scrollY < 0);
+
+
+            bool isOpposite = (directionDown && lastDirection == -1)||(directionUp && lastDirection == 1);
+            if (isOpposite) scrollState = SCROLL_PASSED;
+
+            lastDirection = 0;
+            if (directionUp) lastDirection = -1;
+            if (directionDown) lastDirection = 1;
+
+            if (!a.active) {
+
+                bool isStateful = (scrollState == SCROLL_PASSED);
+
+                if (isStateful) {
+                    scrollY = scrollY - d;
+                    set();
+                }
+
+                float outerY = outer.y;
+                float outerH = outer.height;
+                float innerH = inner.height;
+
+                float bottomInner = scrollY + inner.height;
+                float bottomOuter = outer.y + outer.height;
+
+                bool isLess = bottomInner < bottomOuter;
+                bool isLessThan = bottomOuter - bottomInner > 0;
+
+                bool isMore = scrollY > outerY;
+                bool isMoreThan = scrollY - outerY > 0;
+
+                float length = ( t - timestamp ) * s.elasticSpeed;
+                if (length > 0.6) length = 0.6;
+                float distance = d * s.elasticDistance;
+
+                if (isLess && isLessThan && isStateful) {
+
+                    scrollState = SCROLL_CHECK;
+    //                ofLogVerbose("[Scroller]") << "Animate UP" << length << a.from << a.to;
+                    a.direction = "UP";
+                    a.timeline = 0;
+                    a.active = true;
+                    a.length = length;
+                    a.from = outer.y - (innerH - outerH);
+                    a.to = outer.y - (innerH - outerH) - (distance);
+                }
+
+                if (isMore && isMoreThan && isStateful) {
+
+                    scrollState = SCROLL_CHECK;
+    //                ofLogVerbose("[Scroller]") << "Animate DOWN" << length << a.from << a.to;
+                    a.direction = "DOWN";
+                    a.timeline = 0;
+                    a.active = true;
+                    a.length = length;
+                    a.from = outer.y;
+                    a.to = outer.y - (distance);
+                }
+
+            }
+
+            timestamp = t;
         }
-        if (!rect->conf.outer.inside( ofGetMouseX(), ofGetMouseY() )) return;
-        
-        float t = ofGetElapsedTimef();
-        float d = ( e.scrollY * -3 );
-        
-        bool directionUp = (e.scrollY > 0);
-        bool directionDown = (e.scrollY < 0);
-        
-        
-        bool isOpposite = (directionDown && lastDirection == -1)||(directionUp && lastDirection == 1);
-        if (isOpposite) scrollState = SCROLL_PASSED;
-        
-        lastDirection = 0;
-        if (directionUp) lastDirection = -1;
-        if (directionDown) lastDirection = 1;
-        
-        if (!a.active) {
-            
-            bool isStateful = (scrollState == SCROLL_PASSED);
-            
-            if (isStateful) {
-                scrollY = scrollY - d;
-                set();
-            }
-            
-            float outerY = rect->conf.outer.y;
-            float outerH = rect->conf.outer.height;
-            float innerH = rect->conf.inner.height;
-            
-            float bottomInner = scrollY + rect->conf.inner.height;
-            float bottomOuter = rect->conf.outer.y + rect->conf.outer.height;
-            
-            bool isLess = bottomInner < bottomOuter;
-            bool isLessThan = bottomOuter - bottomInner > 0;
-            
-            bool isMore = scrollY > outerY;
-            bool isMoreThan = scrollY - outerY > 0;
-            
-            float length = ( t - timestamp ) * s.elasticSpeed;
-            if (length > 0.6) length = 0.6;
-            float distance = d * s.elasticDistance;
-            
-            if (isLess && isLessThan && isStateful) {
-                
-                scrollState = SCROLL_CHECK;
-//                ofLogVerbose("[Scroller]") << "Animate UP" << length << a.from << a.to;
-                a.direction = "UP";
-                a.timeline = 0;
-                a.active = true;
-                a.length = length;
-                a.from = rect->conf.outer.y - (innerH - outerH);
-                a.to = rect->conf.outer.y - (innerH - outerH) - (distance);
-            }
-            
-            if (isMore && isMoreThan && isStateful) {
-                
-                scrollState = SCROLL_CHECK;
-//                ofLogVerbose("[Scroller]") << "Animate DOWN" << length << a.from << a.to;
-                a.direction = "DOWN";
-                a.timeline = 0;
-                a.active = true;
-                a.length = length;
-                a.from = rect->conf.outer.y;
-                a.to = rect->conf.outer.y - (distance);
-            }
-            
-        }
-        
-        timestamp = t;
     }
 
     void Scroller::pressed( int x, int y ) {
         
         if (scrollBarOuter.inside(x, y)) {
             
-            dragOrigin.set(x, y);
-            dragOriginBar = scrollBar;
+            dragOriginY = y;
             isDragged = true;
         }
     }
     void Scroller::dragged( int x, int y ) {
         if (isDragged) {
             
-            float start = ( dragOrigin.y - dragOriginBar.y ) + rect->conf.outer.y;
-            float end = ( rect->conf.outer.y + rect->conf.outer.height ) - ( (dragOriginBar.y + dragOriginBar.height) - dragOrigin.y);
-            scrollY = ofMap( y, start, end, rect->conf.outer.y, ( rect->conf.outer.height - rect->conf.inner.height ) + rect->conf.outer.y, true);
+            float range = scrollBarOuter.height - scrollBar.height;
+            scrollYDest = -ofMap( dragOriginY - y, range, 0, 0, ( outer.height - inner.height ), true);
             hoverTimestamp = ofGetElapsedTimef();
             hoverBarTimestamp = hoverTimestamp;
             set();

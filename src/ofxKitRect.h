@@ -1,4 +1,3 @@
-
 #pragma once
 #include "ofMain.h"
 #include "ofxKitScroller.h"
@@ -14,13 +13,13 @@
 
 #define OFXKIT_IN 5 // inside
 
-#define OFXKIT_PL 6 // padding L
-#define OFXKIT_PT 7 // padding T
-#define OFXKIT_PR 8 // padding R
 #define OFXKIT_PB 9 // padding B
+#define OFXKIT_PR 8 // padding R
 
 #define OFXKIT_DT 10 // drop T
 #define OFXKIT_DR 11 // drop R
+#define OFXKIT_PL 6 // padding L
+#define OFXKIT_PT 7 // padding T
 #define OFXKIT_DB 12 // drop B
 #define OFXKIT_DL 13 // drop L
 
@@ -82,23 +81,33 @@ namespace ofxKit {
     class RectConf {
     public:
         string name;
+
         int type;
+
         bool fixed;
         bool ghost;
         bool scroll;
+
         ofRectangle ratio;
         ofRectangle outer;
         ofRectangle inner;
         ofRectangle minimum;
+
         ofVec4f margins;
         void init() {
             name = "";
+
             type = OFXKIT_COL;
+
             fixed = false;
             ghost = false;
             scroll = false;
+
             ratio.set(0,0,1,1);
+            outer.set(-999,-999,1,1);
+            inner.set(-999,-999,1,1);
             minimum.set(0,0,2,2);
+
             margins.set(0,0,0,0);
         }
         RectConf() {
@@ -117,9 +126,7 @@ namespace ofxKit {
         
         
     };
-    
-    
-    
+
     static ofRectangle Shrink(ofRectangle r, ofVec4f v) {
         r.x += v.z;
         r.y += v.w;
@@ -129,18 +136,17 @@ namespace ofxKit {
         r.height -= v.w;
         return r;
     }
-    
+    static ofRectangle Shrink(ofRectangle r, float x, float y, float w, float h) {
+        return Shrink(r, ofVec4f(x,y,w,h));
+    }
+
     static void ConvertInt(ofRectangle & r) {
         r.x = (int)r.x;
         r.y = (int)r.y;
         r.width = (int)r.width;
         r.height = (int)r.height;
     }
-    
-    
-    static ofRectangle Shrink(ofRectangle r, float x, float y, float w, float h) {
-            return Shrink(r, ofVec4f(x,y,w,h));
-    }
+
 
     class Rect {
     public:
@@ -151,8 +157,10 @@ namespace ofxKit {
         Texture texture;
 
         bool inited;
+        bool added;
         bool root;
-        bool scroll;
+        bool debug;
+        float dpi;
         string id;
         
         bool needsAmend;
@@ -161,33 +169,44 @@ namespace ofxKit {
         
         float opacity;
         ofVec2f offset;
+
+        /*-- allow many different types of offset - added together --*/
+
+        std::map<string, ofVec2f> offsets;
+        bool hasOffset(string key);
+
+        std::map<string, bool> inactives;
+        bool hasInactive(string key);
+
         ofRectangle transform;
         ofVec3f origin;
         
         void init();
         
-        ofxKit::Scroller scroller;
+        ofxKit::Scroller * scroller;
         
         vector<int> location;
         Rect * parent;
         vector<Rect *> childr;
-        vector<Rect *> global;
+        // vector<Rect *> global;
         vector<Rect *> ghosts;
-        
+
         ofEvent<ofxKit::Event> event;
-        ofEvent<ofxKit::Event> added;
-        ofEvent<ofxKit::Event> amended;
         ofEvent<ofxKit::Rect *> sizeUpdated;
         ofEventListener onTextureUpdated;
         
         
         /*-- main functions --*/
-        
-        Rect(int type = OFXKIT_COL, bool root_ = true);
-        Rect(RectConf conf_, bool root_ = true);
-        
-        Rect & add(int t = OFXKIT_COL, int idx = -1);
-        Rect & add(RectConf conf_, int idx = -1);
+
+        Rect();
+        Rect( RectConf conf_ );
+        Rect(int type);
+        Rect(float x, float y, float w, float h, int type = OFXKIT_COL);
+        ~Rect();
+
+        Rect & add( Rect & rect, int idx = -1 );
+        Rect & add(int type = OFXKIT_COL, int idx = -1 );
+        Rect & add( RectConf conf, int idx = -1 );
  
         void update();
         
@@ -200,13 +219,12 @@ namespace ofxKit {
         void clear();
         
         /*-- internal utilities --*/
-        
+
         bool isInvalid( Rect * g );
         void tag();
         string getLocationString(string l = "");
-        void amendPtrs( Rect * ch, int idx);
+        void amendPtrs( Rect * rect, int idx);
         Rect * getRoot();
-        void detectOverflow();
         void scrollEvent(string & e);
         int getScrollingGrids( vector<Rect *> & list );
         
@@ -240,28 +258,30 @@ namespace ofxKit {
         
         /*-- dimensions --*/
         
-        void setRatios( vector<float> ratios, bool reload );
-        void set(float x, float y, float w, float h, bool reload);
-        void set(ofRectangle r, bool reload);
+        void setRatios( vector<float> ratios );
+        void set(float x, float y, float w, float h);
+        void set(ofRectangle r);
         
-        void setWidth(float w, bool reload);
-        void setHeight(float h, bool reload);
+        void setWidth(float w);
+        void setHeight(float h);
         
         /*-- drawing --*/
         
         
-        void drawWireframes(bool drawOuter = true, bool drawInner = false, bool drawObj = false, bool drawScrollers = false);
+        void drawWireframes(bool drawOuter = true, bool drawInner = false, bool drawObj = false);
         void drawScrollers();
-        void draw();
+        void drawInfo();
         void drawIsomorphic();
         void drawTextures();
+        virtual void draw();
         
         /*-- interactions --*/
         
         void scrolled( ofMouseEventArgs & e );
-        void pressed( int x, int y );
-        void dragged( int x, int y );
-        void released( int x, int y );
+        virtual void pressed( int x, int y, int id = -1 );
+        virtual void dragged( int x, int y, int id = -1 );
+        virtual void released( int x, int y, int id = -1 );
+        virtual void moved( int x, int y, int id = -1 );
         
         
 //        void setTexture(ofTexture * texture_, int type_, float offsetX_, float offset_Y);
