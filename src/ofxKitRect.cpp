@@ -67,7 +67,7 @@ namespace ofxKit {
         Rect * ch = new Rect( t );
         ch->root = false;
         ch->conf.type = t;
-        ofLogNotice("ofxKit") << "adding" << ch->whatAreYou();
+//        ofLogNotice("ofxKit") << "adding" << ch->whatAreYou();
         amendPtrs(ch, idx);
 //        amend();
         return * ch;
@@ -110,7 +110,7 @@ namespace ofxKit {
         
         //        ofLogNotice("ofxKit::Rect") << "adding child @ position:" << idx << "size:" << ch->conf.outer;
         Event e("added", ch);
-        ofLogNotice("ofxKit") << "added at" << r->global.back()->whereAreYou();
+//        ofLogNotice("ofxKit") << "added at" << r->global.back()->whereAreYou();
         ofNotifyEvent(r->event, e);
         
         /*-- Return vector --*/
@@ -140,13 +140,11 @@ namespace ofxKit {
     
     void Rect::setFixed( bool b ) {
         conf.fixed = b;
-//        ( !root ) ? parent->amend() : amend();
         ofxKit::Event e("setfixed", this);
         ofNotifyEvent(getRoot()->event, e);
     }
     void Rect::setScroll( bool b ) {
         conf.scroll = b;
-//        ( !root ) ? parent->amend() : amend();
         ofxKit::Event e("setscroll", this);
         ofNotifyEvent(getRoot()->event, e);
     }
@@ -404,7 +402,7 @@ namespace ofxKit {
     
     void Rect::pressed( int x, int y ) {
         
-        ofLogNotice("ofxKit") << "pressed" << id;
+//        ofLogNotice("ofxKit") << "pressed" << id;
         Event e("pressed", this);
         ofNotifyEvent(event, e);
     }
@@ -688,7 +686,7 @@ namespace ofxKit {
             inited = true;
         }
         if (needsAmend && ofGetElapsedTimef() > amendTimestamp + amendDelay) {
-            ofLog() << "ofxKit" << "delayed amend" << amendTimestamp;
+//            ofLog() << "ofxKit" << "delayed amend" << amendTimestamp;
             amend();
             needsAmend = false;
         }

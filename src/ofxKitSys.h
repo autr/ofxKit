@@ -128,19 +128,31 @@ namespace ofxKit {
         ByteSize * capacity;
         ByteSize * available;
         ByteSize * free;
+        ofDirectory dir;
+        string path;
         DiskSpace( ) {
 
         }
         DiskSpace( string location ) {
             set (location);
         }
-        void set( string location ) {
-
+        bool set( string location ) {
+            path = location;
+            if (!exists()) {
+                ofLogError("ofxKit") << "directory does not exist" << location;
+                return false;
+            }
+            dir.open(location);
             location = ExpandTilda(location);
             std::filesystem::space_info devi = std::filesystem::space(location);
             capacity = new ByteSize(devi.capacity);
             free = new ByteSize(devi.free);
             available = new ByteSize(devi.available);
+            return true;
+        }
+        bool exists() {
+            dir.open(path);
+            return dir.exists();
         }
     };
     class Sys {

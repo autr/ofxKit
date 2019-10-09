@@ -86,10 +86,10 @@ namespace ofxKit {
         bool fixed;
         bool ghost;
         bool scroll;
-        ofRectangle ratio;
-        ofRectangle outer;
-        ofRectangle inner;
-        ofRectangle minimum;
+        ofRectangle ratio; // ratio sizes
+        ofRectangle outer; // outer size
+        ofRectangle inner; // inner size
+        ofRectangle minimum; // minimum size
         ofVec4f margins;
         void init() {
             name = "";
@@ -121,12 +121,15 @@ namespace ofxKit {
     
     
     static ofRectangle Shrink(ofRectangle r, ofVec4f v) {
-        r.x += v.z;
-        r.y += v.w;
-        r.width -= v.x;
-        r.height -= v.y;
-        r.width -= v.z;
-        r.height -= v.w;
+        r.y += v.x;
+        r.height -= v.x;
+
+        r.width -= v.y;
+        r.height -= v.z;
+
+        r.x += v.w;
+        r.width -= v.w;
+
         return r;
     }
     
