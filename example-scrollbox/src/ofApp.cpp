@@ -2,56 +2,38 @@
 
 //--------------------------------------------------------------
 void ofApp::setup(){
-//    ofSetFrameRate( 60.0f );
-//    ofBackground(0);
-//
-//    /*-- always do this: define 2 rectangles  --*/
-//
-//    scrollBox.outer.x = 100;
-//    scrollBox.outer.y = 100;
-//    scrollBox.outer.width = ofGetWidth() - 200;
-//    scrollBox.outer.height = ofGetHeight() - 200;
-//
-//    scrollBox.inner.set( scrollBox.outer );
-//    scrollBox.inner.height = 1200;
-//
-//    /*-- extra: log events  --*/
-//
-//    events = scrollBox.event.newListener([this](string & s){
-//        ofLog() << "[Scroller] Event: " << s;
-//    });
+    ofLog::setAutoSpace(true);
+    ofSetFrameRate( 60.0f );
+    ofBackground(0);
+    rect.debug = true;
+    ofxKit::Interact::get()->debug = true;
+    rect.conf.margins.set(10,10,10,10);
+    rect.setScroll(true);
+    scroll.conf.type = OFXKIT_OBJ;
+    rect.add(scroll);
+    ofLog() << "added?" << scroll.added;
+    scroll.setFixed(true);
+    scroll.setHeight(1200);
+
+//    ofxKit::Rect r;
+//    rect.add(r);
 }
 
 //--------------------------------------------------------------
 void ofApp::update(){
-
+    rect.update();
 }
 
 //--------------------------------------------------------------
 void ofApp::draw(){
     
     /*-- always do this: --*/
-//
-//    ofSetColor(255);
-//    scrollBox.draw();
-//
-//    /*-- extra: draw inner boxes
-//     --*/
-//
-//    for(int i = 0; i < 23; i ++) {
-//        ofRectangle r( 100, scrollBox.inner.y + ( i * 50 ), scrollBox.inner.width, 100 );
-//        ofNoFill();
-//        ofSetColor( 0, 255, 255 );
-//        ofDrawRectangle( r );
-//        ofSetColor( 255 );
-//        if (i < rows.size()) ofDrawBitmapString( rows[i], r.x + 20, r.getCenter().y - 20 );
-//    }
-//
-//    /*-- extra: draw outer box --*/
-//
-//    bool isInsideScrollBox = (scrollBox.getOuterBox().inside( ofGetMouseX(), ofGetMouseY() ));
-//    (isInsideScrollBox) ? ofSetColor( 255 ) : ofSetColor( 255, 255, 0 );
-//    ofDrawRectangle( scrollBox.outer );
+
+    ofSetColor(255);
+    rect.set(10,10,ofGetWidth()-20, ofGetHeight()-20);
+    rect.amend();
+    rect.drawWireframes(true, true, true);
+    rect.drawScrollers();
     
 }
 
@@ -59,23 +41,24 @@ void ofApp::draw(){
 /*-- always do this: pass events --*/
 /*-- dragged, pressed, released, scrolled --*/
 
+
 //--------------------------------------------------------------
 void ofApp::mouseDragged(int x, int y, int button){
-//    scrollBox.dragged( x, y );
+
 }
 
 //--------------------------------------------------------------
 void ofApp::mousePressed(int x, int y, int button){
-//    scrollBox.pressed( x, y );
+
 }
 
 //--------------------------------------------------------------
 void ofApp::mouseReleased(int x, int y, int button){
-//    scrollBox.released( x, y );
+
 }
 
 void ofApp::mouseScrolled( ofMouseEventArgs & e ) {
-//    scrollBox.scrolled(e);
+
 }
 
 //--------------------------------------------------------------

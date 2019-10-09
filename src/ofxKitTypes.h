@@ -20,15 +20,15 @@ namespace ofxKit {
         ofPoint oPress;
         vector<float> mHeights;
         vector<float> mWidths;
-        ofxKit::Rect * unit;
+        ofxKit::Rect * rect;
         
-        Action(int t,  Rect * u, ofPoint p, vector<float> mW = {}, vector<float> mH = {}) {
+        Action(int t,  Rect * rect_, ofPoint p, vector<float> mW = {}, vector<float> mH = {}) {
             type = t;
-            unit = u;
+            rect = rect_;
             oPress = p;
             mWidths = mW;
             mHeights = mH;
-            oBounds = u->conf.outer;
+            oBounds = rect_->conf.outer;
         }
     };
 

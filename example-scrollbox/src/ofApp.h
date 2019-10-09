@@ -23,7 +23,6 @@ class ofApp : public ofBaseApp{
 		void gotMessage(ofMessage msg);
 		
         void mouseScrolled( ofMouseEventArgs & e );
-        ofEventListener events;
-//        ofxKit::Scroller scrollBox;
-        vector<string> rows;
+        ofxKit::Rect rect;
+        ofxKit::Rect scroll;
 };

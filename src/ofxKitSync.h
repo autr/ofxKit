@@ -2,7 +2,7 @@
 
 #include "ofMain.h"
 #include "ofxKitRect.h"
-#include "ofxTxt.h"
+//#include "ofxTxt.h"
 
 namespace ofxKit {
     
@@ -12,19 +12,6 @@ namespace ofxKit {
     class SyncTxt {
     public:
         Rect * rect;
-//        ofxTxt * txt;
-        ofTexture * texture;
-        ofEventListener onTextureSet;
-        
-//        SyncTxt( Rect * r , ofxTxt * t) {
-//            rect = r;
-//            txt = t;
-//            onTextureSet = txt->textureSet.newListener([this]( ofTexture * newTexture ){
-//                ofLogNotice("ofxKit") << "syncing texture to rect";
-//                rect->texture.set( newTexture );
-//            });
-            
-//        }
     };
     
     class Sync {
